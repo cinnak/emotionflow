@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="A digital ceremony for emotional release. Feel it fully, let it go completely.">
+  <meta name="theme-color" content="#0d1219">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <title>Sadness Confetti | Emotional Release</title>
+  <link rel="stylesheet" href="styles.css?v=6">
+</head>
+<body data-emotion="sadness">
+  <!-- Screen Reader Announcements -->
+  <div aria-live="polite" aria-atomic="true" id="a11yAnnouncer" class="sr-only"></div>
+
+  <!-- Ambient Background -->
+  <div class="ambient-background" aria-hidden="true">
+    <div class="gradient-orb orb-1"></div>
+    <div class="gradient-orb orb-2"></div>
+    <div class="gradient-orb orb-3"></div>
+  </div>
+
+  <!-- Particle Canvas -->
+  <canvas id="particleCanvas" aria-label="Particle effects animation"></canvas>
+
+  <!-- Exhale Indicator (Closure Animation) -->
+  <div class="exhale-indicator" id="exhaleIndicator" aria-hidden="true"></div>
+
+  <!-- Main Container -->
+  <main class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">🌊</span>
+        <h1 class="logo-text">Sadness Confetti</h1>
+      </div>
+      <p class="tagline">Feel it fully, let it go completely</p>
+    </header>
+
+    <!-- Emotion Selector -->
+    <nav class="emotion-selector" role="radiogroup" aria-label="Select your emotion">
+      <button class="emotion-btn active" data-emotion="sadness" role="radio" aria-checked="true" tabindex="0">
+        <span class="emotion-icon">💧</span>
+        <span class="emotion-label">Sadness</span>
+      </button>
+      <button class="emotion-btn" data-emotion="anger" role="radio" aria-checked="false" tabindex="0">
+        <span class="emotion-icon">🔥</span>
+        <span class="emotion-label">Anger</span>
+      </button>
+      <button class="emotion-btn" data-emotion="anxiety" role="radio" aria-checked="false" tabindex="0">
+        <span class="emotion-icon">🌀</span>
+        <span class="emotion-label">Anxiety</span>
+      </button>
+      <button class="emotion-btn" data-emotion="fear" role="radio" aria-checked="false" tabindex="0">
+        <span class="emotion-icon">👻</span>
+        <span class="emotion-label">Fear</span>
+      </button>
+      <button class="emotion-btn" data-emotion="shame" role="radio" aria-checked="false" tabindex="0">
+        <span class="emotion-icon">🌑</span>
+        <span class="emotion-label">Shame</span>
+      </button>
+      <button class="emotion-btn" data-emotion="loneliness" role="radio" aria-checked="false" tabindex="0">
+        <span class="emotion-icon">🌫️</span>
+        <span class="emotion-label">Loneliness</span>
+      </button>
+      <button class="emotion-btn" data-emotion="auto" role="radio" aria-checked="false" tabindex="0">
+        <span class="emotion-icon">✨</span>
+        <span class="emotion-label">Auto</span>
+      </button>
+    </nav>
+
+    <!-- Input Section -->
+    <section class="input-section" id="inputSection">
+      <div class="emotion-well">
+        <textarea
+          id="emotionInput"
+          class="emotion-input"
+          placeholder="What do you need to let go of?
+
+Pour it out here. Let yourself feel it fully.
+Then hold the button or press Space to build your release."
+          maxlength="1000"
+          aria-label="Write your emotions here"
+        ></textarea>
+        <div class="well-border top"></div>
+        <div class="well-border right"></div>
+        <div class="well-border bottom"></div>
+        <div class="well-border left"></div>
+      </div>
+
+      <div class="input-footer">
+        <div class="char-indicator">
+          <span id="charCount">0</span>
+          <span class="char-divider">/</span>
+          <span>1000</span>
+        </div>
+        <div class="input-status" id="inputStatus">Start typing...</div>
+      </div>
+
+      <div class="release-btn-container">
+        <button id="releaseBtn" class="release-btn" disabled aria-describedby="releaseHelp">
+          <span class="btn-content">
+            <span class="btn-text">Hold to Release</span>
+            <span class="btn-subtitle">or press and hold Space</span>
+          </span>
+          <div class="charge-indicator">
+            <div class="charge-fill" id="chargeFill"></div>
+          </div>
+        </button>
+        <span id="releaseHelp" class="sr-only">Hold for 1.5 seconds or click and wait for countdown</span>
+      </div>
+
+      <!-- Alternative Release Option (for accessibility) -->
+      <div class="alt-release-container">
+        <button id="clickReleaseBtn" class="alt-release-btn" disabled aria-describedby="clickReleaseHelp">
+          <span class="alt-release-content">
+            <span>Click to Release (3s countdown)</span>
+            <span class="release-countdown" id="clickCountdown" aria-live="polite"></span>
+          </span>
+        </button>
+        <span id="clickReleaseHelp" class="sr-only">Alternative release method - click once and wait 3 seconds</span>
+      </div>
+    </section>
+
+    <!-- Release Animation Container -->
+    <div class="release-container" id="releaseContainer" aria-hidden="true">
+      <div class="text-preview" id="textPreview"></div>
+    </div>
+
+    <!-- Afterglow Section -->
+    <section class="afterglow-section" id="afterglowSection" hidden>
+      <div class="afterglow-content">
+        <div class="afterglow-icon" id="afterglowIcon">
+          <svg class="sun-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- Sun rays -->
+            <g class="sun-rays">
+              <line x1="50" y1="10" x2="50" y2="25" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+              <line x1="50" y1="75" x2="50" y2="90" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+              <line x1="10" y1="50" x2="25" y2="50" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+              <line x1="75" y1="50" x2="90" y2="50" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+              <line x1="22" y1="22" x2="33" y2="33" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+              <line x1="67" y1="67" x2="78" y2="78" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+              <line x1="22" y1="78" x2="33" y2="67" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+              <line x1="67" y1="33" x2="78" y2="22" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            </g>
+            <!-- Sun circle -->
+            <circle class="sun-circle" cx="50" cy="50" r="20" fill="currentColor" opacity="0.3"/>
+            <circle cx="50" cy="50" r="14" fill="currentColor"/>
+          </svg>
+        </div>
+        <p class="afterglow-message" id="afterglowMessage"></p>
+
+        <button id="resetBtn" class="reset-btn">
+          <span>Release Another</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+
+        <!-- Milestone Footer - Small, unobtrusive -->
+        <p class="milestone-footer" id="milestoneFooter" hidden></p>
+
+        <!-- Crisis Support Resources -->
+        <div class="crisis-support" id="crisisSupport">
+          <p class="crisis-text">Need additional support?</p>
+          <div class="crisis-links">
+            <a href="tel:988" class="crisis-link">🇺🇸 Crisis Line: 988</a>
+            <a href="https://findahelpline.com" target="_blank" rel="noopener" class="crisis-link">🌍 International Resources</a>
+            <a href="https://www.mentalhealth.gov/get-help/immediate-help" target="_blank" rel="noopener" class="crisis-link">📚 Mental Health Resources</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p class="footer-text">Every emotion deserves to be felt, then released</p>
+      <p class="release-counter" id="releaseCounter">
+        <span class="counter-icon">🎯</span>
+        <span class="counter-text">You've released <strong id="totalReleases">0</strong> emotions</span>
+      </p>
+      <p class="keyboard-hint"><kbd>?</kbd> for keyboard shortcuts</p>
+    </footer>
+  </main>
+
+  <!-- Accessibility: Keyboard Shortcuts Modal -->
+  <dialog id="keyboardModal" class="keyboard-modal">
+    <div class="keyboard-modal-content">
+      <h2>Keyboard Shortcuts</h2>
+      <ul class="keyboard-list">
+        <li><kbd>Space</kbd> (hold) - Build and release</li>
+        <li><kbd>Enter</kbd> - Quick release (3s countdown)</li>
+        <li><kbd>Escape</kbd> - Cancel or reset</li>
+        <li><kbd>1</kbd>-<kbd>7</kbd> - Select emotion</li>
+        <li><kbd>?</kbd> - Show this help</li>
+      </ul>
+      <button id="closeKeyboardModal" class="modal-close">Close</button>
+    </div>
+  </dialog>
+
+  <!-- Sound Toggle -->
+  <button id="soundToggle" class="sound-toggle" aria-label="Toggle sound">
+    <span class="sound-icon">🔇</span>
+  </button>
+
+  <!-- Animation Toggle (for accessibility) -->
+  <button id="motionToggle" class="motion-toggle" aria-label="Reduce motion" hidden>
+    <span class="motion-icon">🌊</span>
+  </button>
+
+  <!-- Version Update -->
+  <script type="module" src="app.js?v=10"></script>
+</body>
+</html>

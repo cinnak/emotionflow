@@ -1,0 +1,23 @@
+{
+  "name": "sadness-confetti",
+  "version": "1.0.0",
+  "description": "Release your emotions into beautiful particle effects",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  },
+  "keywords": [
+    "emotional",
+    "wellness",
+    "particles",
+    "confetti",
+    "meditation"
+  ],
+  "author": "",
+  "license": "MIT"
+}
