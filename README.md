@@ -1,8 +1,8 @@
-# Sadness Confetti
+# EmotionFlow
 
 > A digital ceremony for letting go. Release your emotions into beautiful particle effects.
 
-![Sadness Confetti](https://img.shields.io/badge/emotions-release-brightgreen)
+![EmotionFlow](https://img.shields.io/badge/emotions-release-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 ## ✨ Features

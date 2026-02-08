@@ -1,5 +1,5 @@
 // ============================================
-// Sadness Confetti - Emotional Release Engine
+// EmotionFlow - Emotional Release Engine
 // Based on psychological research for true catharsis
 // ============================================
 
