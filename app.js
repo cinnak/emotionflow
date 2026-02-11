@@ -233,7 +233,7 @@ class Particle {
     this.friction = 0.99;
 
     // Visual properties
-    this.size = 2.5 + Math.random() * 1.5;
+    this.size = 4 + Math.random() * 3;  // 4-7px for better visibility
     this.baseSize = this.size;
     this.life = 1.0;
     this.decay = 0.003 + Math.random() * 0.003;
@@ -1354,6 +1354,10 @@ class SadnessConfetti {
     // Create text particles at the exact position of the text (center of screen)
     this.particles.createTextParticles(displayText, emotion);
 
+    // Start animation loop IMMEDIATELY so particles are visible during build-up
+    // Particles will stay in 'holding' phase until releaseText() is called
+    this.particles.start();
+
     // Play a subtle build-up sound
     this.audio.playRelease(emotion);
 
@@ -1372,14 +1376,14 @@ class SadnessConfetti {
 
     this.announce('Releasing your emotions...');
 
+    // Hide text preview IMMEDIATELY so particles are visible
+    this.textPreview.style.opacity = '0';
+
     // Start the shattering - particles break away from text positions
     this.particles.releaseText();
-    this.particles.start();
 
-    // Text particles shatter from their actual text positions - no separate burst
+    // Small delay for explosion to play out
     await this.delay(500);
-    // Hide the text preview permanently - it's now particles
-    this.textPreview.style.opacity = '0';
     this.releaseContainer.classList.remove('active');
     this.releaseContainer.classList.remove('shattering');
     this.releaseContainer.classList.remove(emotion);
