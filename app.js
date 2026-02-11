@@ -294,6 +294,10 @@ class EmotionalParticleSystem {
           // Staggered delay for more dramatic shatter effect
           const delay = Math.random() * 400;
 
+          // Text particles get glow based on distance from center (more dramatic)
+          const hasGlow = Math.random() > 0.4;
+          const glowIntensity = 0.5 + Math.random() * 0.5;
+
           this.textParticles.push({
             x: x,
             y: y,
@@ -304,7 +308,9 @@ class EmotionalParticleSystem {
             vx: 0,
             vy: 0,
             size: gap - 1,
+            baseSize: gap - 1,
             color: palette.primary,
+            glowColor: palette.peak,
             emotion: emotion,
             distance: distance,
             angle: angle,
@@ -316,7 +322,9 @@ class EmotionalParticleSystem {
             delay: delay,
             phase: 'holding',
             trail: [],
-            maxTrailLength: 8 // Longer trails for more drama
+            maxTrailLength: 15, // Longer trails for more drama
+            hasGlow: hasGlow,
+            glowIntensity: glowIntensity
           });
         }
       }
@@ -452,9 +460,10 @@ class EmotionalParticleSystem {
     const behavior = this.getEmotionBehavior(emotion);
     const isMobile = this.width < 640;
 
-    let count = isMobile ? 800 : 1500;
-    if (emotion === 'anger') count = isMobile ? 1000 : 2000;
-    else if (emotion === 'anxiety' || emotion === 'fear') count = isMobile ? 900 : 1700;
+    // Increased particle counts for more dramatic effect (2x-3x)
+    let count = isMobile ? 2000 : 4000;
+    if (emotion === 'anger') count = isMobile ? 3000 : 6000;
+    else if (emotion === 'anxiety' || emotion === 'fear') count = isMobile ? 2500 : 5000;
 
     const waves = 3;
     const particlesPerWave = Math.floor(count / waves);
@@ -472,17 +481,26 @@ class EmotionalParticleSystem {
       const spawnY = -50 - Math.random() * 100;
 
       const particleType = Math.random();
-      let size, decayMod;
+      let size, decayMod, hasGlow, glowIntensity;
 
       if (particleType < 0.30) {
+        // Large confetti - main show particles with strong glow
         size = 8 + Math.random() * 12;
         decayMod = 1;
+        hasGlow = true;
+        glowIntensity = 1.0;
       } else if (particleType < 0.50) {
+        // Medium sparkles - moderate glow
         size = 2 + Math.random() * 4;
         decayMod = 0.7;
+        hasGlow = Math.random() > 0.3; // 70% have glow
+        glowIntensity = 0.6 + Math.random() * 0.4;
       } else {
+        // Small mist particles - subtle or no glow
         size = 1 + Math.random() * 3;
         decayMod = 1.5;
+        hasGlow = Math.random() > 0.7; // 30% have subtle glow
+        glowIntensity = 0.3 + Math.random() * 0.3;
       }
 
       const vx = (Math.random() - 0.5) * 6;
@@ -494,7 +512,9 @@ class EmotionalParticleSystem {
         vx: vx,
         vy: vy,
         size: size,
+        baseSize: size,
         color: palette.journey[Math.floor(Math.random() * 2)],
+        glowColor: palette.peak,
         rotation: Math.random() * 360,
         rotationSpeed: (Math.random() - 0.5) * 15,
         life: 1,
@@ -504,7 +524,11 @@ class EmotionalParticleSystem {
         wobble: Math.random() * Math.PI * 2,
         wobbleSpeed: behavior.wobbleSpeed,
         emotion: emotion,
-        type: particleType < 0.30 ? 'confetti' : (particleType < 0.50 ? 'sparkle' : 'mist')
+        type: particleType < 0.30 ? 'confetti' : (particleType < 0.50 ? 'sparkle' : 'mist'),
+        hasGlow: hasGlow,
+        glowIntensity: glowIntensity,
+        trail: [],
+        maxTrailLength: hasGlow ? 15 : 8
       });
     }
   }
@@ -615,6 +639,7 @@ class EmotionalParticleSystem {
       p.color = this.getColorAtStage(p.emotion, progress);
 
       if (p.life > 0) {
+        // Draw trail with glow
         if (p.trail.length > 1) {
           this.ctx.beginPath();
           this.ctx.moveTo(p.trail[0].x, p.trail[0].y);
@@ -622,16 +647,34 @@ class EmotionalParticleSystem {
             this.ctx.lineTo(p.trail[i].x, p.trail[i].y);
           }
           this.ctx.strokeStyle = p.color;
-          this.ctx.globalAlpha = p.life * 0.3;
-          this.ctx.lineWidth = p.size * 0.5;
+          this.ctx.globalAlpha = p.life * 0.5;
+          this.ctx.lineWidth = p.size * 0.8;
+          this.ctx.lineCap = 'round';
           this.ctx.stroke();
         }
 
+        // Additive blending for glow effect
+        this.ctx.globalCompositeOperation = 'lighter';
+
+        // Bloom glow for particles that have it
+        if (p.hasGlow && p.glowIntensity) {
+          const glowRadius = p.size * 4 * p.life * p.glowIntensity;
+          this.ctx.shadowBlur = glowRadius;
+          this.ctx.shadowColor = p.glowColor;
+        } else {
+          this.ctx.shadowBlur = 0;
+        }
+
+        // Draw main particle
         this.ctx.globalAlpha = p.life;
         this.ctx.fillStyle = p.color;
         this.ctx.beginPath();
         this.ctx.arc(p.x, p.y, p.size * (0.5 + p.life * 0.5), 0, Math.PI * 2);
         this.ctx.fill();
+
+        // Reset effects
+        this.ctx.shadowBlur = 0;
+        this.ctx.globalCompositeOperation = 'source-over';
       }
 
       return p.life > 0;
@@ -656,6 +699,17 @@ class EmotionalParticleSystem {
 
       if (p.life > 0) {
         this.ctx.save();
+
+        // Additive blending for glow effect on burst particles
+        this.ctx.globalCompositeOperation = 'lighter';
+
+        // Bloom glow
+        if (p.hasGlow && p.glowIntensity) {
+          const glowRadius = p.baseSize * 5 * p.life * p.glowIntensity;
+          this.ctx.shadowBlur = glowRadius;
+          this.ctx.shadowColor = p.glowColor;
+        }
+
         this.ctx.translate(p.x, p.y);
         this.ctx.rotate(p.rotation * Math.PI / 180);
         this.ctx.globalAlpha = p.life;
@@ -684,6 +738,8 @@ class EmotionalParticleSystem {
     });
 
     this.ctx.globalAlpha = 1;
+    this.ctx.globalCompositeOperation = 'source-over';
+    this.ctx.shadowBlur = 0;
 
     return this.textParticles.length > 0 || this.particles.length > 0;
   }
