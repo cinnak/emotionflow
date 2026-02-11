@@ -210,499 +210,322 @@ const EmotionEngine = {
 };
 
 // ============================================
-// Advanced Particle System with True Emotional Physics
+// Simple, Clean Particle System - Complete Rewrite
 // ============================================
+
+/**
+ * Single Particle Class
+ * Simple ES6 class with clear physics
+ */
+class Particle {
+  constructor(x, y, emotion, palette) {
+    this.x = x;
+    this.y = y;
+    this.originX = x;
+    this.originY = y;
+    this.emotion = emotion;
+    this.palette = palette;
+
+    // Physics properties
+    this.vx = 0;
+    this.vy = 0;
+    this.gravity = 0.15;
+    this.friction = 0.99;
+
+    // Visual properties
+    this.size = 2.5 + Math.random() * 1.5;
+    this.baseSize = this.size;
+    this.life = 1.0;
+    this.decay = 0.003 + Math.random() * 0.003;
+    this.color = palette.peak;
+    this.colorIndex = 0;
+    this.journey = palette.journey;
+
+    // State
+    this.phase = 'holding'; // holding, exploding, fading
+    this.delay = Math.random() * 500; // Staggered explosion
+  }
+
+  /**
+   * Trigger explosion with emotion-specific velocity
+   */
+  explode() {
+    this.phase = 'exploding';
+
+    switch (this.emotion) {
+      case 'anger':
+        // Violent explosion in ALL directions
+        const angerPower = 12 + Math.random() * 20;
+        const angerAngle = Math.random() * Math.PI * 2;
+        this.vx = Math.cos(angerAngle) * angerPower;
+        this.vy = Math.sin(angerAngle) * angerPower - 3; // Slight upward bias
+        this.decay = 0.012 + Math.random() * 0.008;
+        break;
+
+      case 'sadness':
+        // Fall down, then float up
+        this.vx = (Math.random() - 0.5) * 8;
+        this.vy = 2 + Math.random() * 4; // Start falling
+        this.gravity = 0.2;
+        this.fallTime = 30 + Math.random() * 30;
+        this.phase = 'sadness_falling';
+        this.decay = 0.004 + Math.random() * 0.002;
+        break;
+
+      case 'anxiety':
+        // Chaotic scatter
+        this.vx = (Math.random() - 0.5) * 20;
+        this.vy = (Math.random() - 0.5) * 15;
+        this.gravity = 0.12;
+        this.chaosAmount = 2;
+        this.decay = 0.008 + Math.random() * 0.005;
+        break;
+
+      case 'fear':
+        // Trembling movement
+        this.vx = (Math.random() - 0.5) * 10;
+        this.vy = (Math.random() - 0.5) * 8;
+        this.gravity = 0.1;
+        this.trembleAmount = 1.5;
+        this.decay = 0.005 + Math.random() * 0.003;
+        break;
+
+      case 'shame':
+        // Shrink then expand
+        this.vx = (Math.random() - 0.5) * 5;
+        this.vy = 1 + Math.random() * 3;
+        this.gravity = 0.08;
+        this.shrinking = true;
+        this.shrinkTime = 20 + Math.random() * 20;
+        this.decay = 0.003 + Math.random() * 0.002;
+        break;
+
+      case 'loneliness':
+        // Drift seeking
+        this.vx = (Math.random() - 0.5) * 6;
+        this.vy = (Math.random() - 0.5) * 5;
+        this.gravity = 0.1;
+        this.driftAngle = Math.random() * Math.PI * 2;
+        this.decay = 0.004 + Math.random() * 0.002;
+        break;
+
+      default: // auto
+        // Gentle explosion
+        const autoPower = 6 + Math.random() * 10;
+        const autoAngle = Math.random() * Math.PI * 2;
+        this.vx = Math.cos(autoAngle) * autoPower;
+        this.vy = Math.sin(autoAngle) * autoPower - 2;
+        this.gravity = 0.12;
+        this.decay = 0.005 + Math.random() * 0.003;
+    }
+  }
+
+  update() {
+    // Handle delay before explosion
+    if (this.phase === 'holding') {
+      this.delay -= 16;
+      if (this.delay <= 0) {
+        this.explode();
+      }
+      return true;
+    }
+
+    // Emotion-specific behavior
+    switch (this.phase) {
+      case 'sadness_falling':
+        this.vy += this.gravity;
+        this.vx *= this.friction;
+        this.fallTime--;
+        if (this.fallTime <= 0) {
+          this.phase = 'sadness_rising';
+          this.vy = -2 - Math.random() * 2; // Float up
+        }
+        break;
+
+      case 'sadness_rising':
+        this.vy *= 0.97;
+        this.vx *= 0.98;
+        this.gravity = 0; // No gravity when rising
+        break;
+
+      case 'exploding':
+        // Default physics
+        if (this.chaosAmount) {
+          // Anxiety chaos
+          this.vy += this.gravity;
+          this.vx *= this.friction;
+          this.vx += (Math.random() - 0.5) * this.chaosAmount;
+          this.vy += (Math.random() - 0.5) * this.chaosAmount;
+          this.chaosAmount *= 0.98;
+        } else if (this.trembleAmount) {
+          // Fear tremble
+          this.vy += this.gravity;
+          this.vx *= this.friction;
+          this.vx += (Math.random() - 0.5) * this.trembleAmount;
+          this.vy += (Math.random() - 0.5) * this.trembleAmount;
+          this.trembleAmount *= 0.97;
+        } else if (this.shrinking !== undefined) {
+          // Shame
+          if (this.shrinking) {
+            this.size *= 0.97;
+            this.vx *= 0.95;
+            this.vy *= 0.95;
+            this.shrinkTime--;
+            if (this.shrinkTime <= 0) {
+              this.shrinking = false;
+              this.vx = (Math.random() - 0.5) * 8;
+              this.vy = 2 + Math.random() * 4;
+            }
+          } else {
+            this.vy += this.gravity;
+            this.vx *= 0.98;
+          }
+        } else if (this.driftAngle !== undefined) {
+          // Loneliness
+          this.vy += this.gravity;
+          this.driftAngle += 0.02;
+          this.vx += Math.cos(this.driftAngle) * 0.2;
+          this.vx *= 0.99;
+        } else {
+          // Default (anger, auto)
+          this.vy += this.gravity;
+          this.vx *= this.friction;
+        }
+        break;
+    }
+
+    // Apply velocity
+    this.x += this.vx;
+    this.y += this.vy;
+
+    // Update color through journey
+    this.life -= this.decay;
+    const progress = 1 - this.life;
+    this.colorIndex = Math.floor(progress * (this.journey.length - 1));
+    this.colorIndex = Math.min(this.colorIndex, this.journey.length - 1);
+
+    return this.life > 0;
+  }
+
+  draw(ctx) {
+    ctx.fillStyle = this.journey[this.colorIndex];
+    ctx.globalAlpha = this.life;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+/**
+ * Main Particle System
+ * Manages text-to-particle conversion and animation
+ */
 class EmotionalParticleSystem {
   constructor(canvas) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d', {
-      alpha: true,
-      desynchronized: true,
-      powerPreference: 'high-performance'
-    });
+    this.ctx = canvas.getContext('2d', { alpha: true });
     this.particles = [];
-    this.textParticles = [];
     this.isRunning = false;
+    this.width = 0;
+    this.height = 0;
     this.resize();
 
     window.addEventListener('resize', () => this.resize());
   }
 
   resize() {
-    const dpr = window.devicePixelRatio || 1;
     const rect = document.documentElement.getBoundingClientRect();
-
-    this.canvas.width = rect.width * dpr;
-    this.canvas.height = rect.height * dpr;
-
-    this.ctx.scale(dpr, dpr);
-
     this.width = rect.width;
     this.height = rect.height;
+
+    // Set canvas size (CSS handles display size)
+    this.canvas.width = this.width;
+    this.canvas.height = this.height;
   }
 
-  // Get color at a specific stage of emotional journey
-  getColorAtStage(emotion, progress) {
-    const palette = EmotionEngine.getPalette(emotion);
-    const journey = palette.journey;
-    const index = Math.floor(progress * (journey.length - 1));
-    return journey[Math.min(index, journey.length - 1)];
-  }
-
-  // Create text particles - THE TEXT ITSELF TRANSFORMS
+  /**
+   * Convert text to particles by rendering and sampling pixels
+   */
   createTextParticles(text, emotion) {
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
+    this.particles = [];
 
-    // Calculate font size - Match CSS: clamp(2rem, 6vw, 4rem) ≈ 32-64px
-    const baseFontSize = Math.min(64, Math.max(32, this.width / (text.length * 0.55)));
-    tempCtx.font = `600 ${baseFontSize}px "Inter", -apple-system, sans-serif`;
-
-    tempCanvas.width = this.width * window.devicePixelRatio;
-    tempCanvas.height = this.height * window.devicePixelRatio;
-    tempCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
-
-    // Draw text with emotion color - positioned at center of screen (match CSS top: 50%)
+    // Get color palette
     const palette = EmotionEngine.getPalette(emotion);
-    const textY = this.height * 0.5; // Match CSS top: 50%
 
-    tempCtx.fillStyle = '#ffffff';
-    tempCtx.textAlign = 'center';
-    tempCtx.textBaseline = 'middle';
-    tempCtx.fillText(text, this.width / 2, textY);
+    // Create offscreen canvas for text rendering
+    const offCanvas = document.createElement('canvas');
+    const offCtx = offCanvas.getContext('2d');
+
+    offCanvas.width = this.width;
+    offCanvas.height = this.height;
+
+    // Calculate font size matching the CSS
+    const fontSize = Math.min(64, Math.max(32, this.width / (text.length * 0.55)));
+    offCtx.font = `600 ${fontSize}px "Inter", -apple-system, sans-serif`;
+
+    // Draw text centered on canvas
+    offCtx.fillStyle = '#ffffff';
+    offCtx.textAlign = 'center';
+    offCtx.textBaseline = 'middle';
+    offCtx.fillText(text, this.width / 2, this.height / 2);
 
     // Get pixel data
-    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+    const imageData = offCtx.getImageData(0, 0, this.width, this.height);
     const pixels = imageData.data;
 
-    const gap = 4; // Balance between performance and visual density
-    const behavior = this.getEmotionBehavior(emotion);
-    const centerX = this.width / 2;
-    const centerY = textY;
+    // Sample pixels to create particles
+    // Gap of 4-5 gives good balance of density vs performance
+    const gap = 5;
 
     for (let y = 0; y < this.height; y += gap) {
       for (let x = 0; x < this.width; x += gap) {
-        const index = (y * tempCanvas.width + x) * 4;
-        const alpha = pixels[index + 3];
-
-        if (alpha > 128) {
-          const dx = x - centerX;
-          const dy = y - centerY;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          const angle = Math.atan2(dy, dx);
-
-          // Staggered delay for more dramatic shatter effect
-          const delay = Math.random() * 400;
-
-          this.textParticles.push({
-            x: x,
-            y: y,
-            originX: x,
-            originY: y,
-            targetX: x + (Math.random() - 0.5) * this.width * 1.2,
-            targetY: this.height + 150 + Math.random() * 300,
-            vx: 0,
-            vy: 0,
-            size: gap + 1,  // Larger particles for better visibility
-            baseSize: gap + 1,
-            color: palette.peak,  // Use brighter peak color for visibility
-            emotion: emotion,
-            distance: distance,
-            angle: angle,
-            life: 1,
-            decay: 0.0015 + Math.random() * 0.0015,
-            wobble: Math.random() * Math.PI * 2,
-            wobbleSpeed: behavior.wobbleSpeed,
-            behavior: behavior,
-            delay: delay,
-            phase: 'holding'
-          });
+        // Check if pixel is filled (alpha > 128)
+        const index = (y * this.width + x) * 4;
+        if (pixels[index + 3] > 128) {
+          // Create particle at this position
+          this.particles.push(new Particle(x, y, emotion, palette));
         }
       }
     }
   }
 
-  // Get emotion-specific physics behavior
-  getEmotionBehavior(emotion) {
-    const behaviors = {
-      sadness: {
-        decay: 0.004 + Math.random() * 0.002,
-        wobbleSpeed: 0.01 + Math.random() * 0.01,
-        gravity: 1.2,  // Fast fall
-        friction: 1,  // No air resistance
-        lift: 0,
-        turbulence: 0.3,
-        phase: 'down_then_up'
-      },
-      anger: {
-        decay: 0.015 + Math.random() * 0.01,
-        wobbleSpeed: 0.05 + Math.random() * 0.05,
-        gravity: 2,  // Explosive downward
-        friction: 1,  // No air resistance
-        lift: 0,
-        turbulence: 3,
-        phase: 'explosive'
-      },
-      anxiety: {
-        decay: 0.008 + Math.random() * 0.005,
-        wobbleSpeed: 0.08 + Math.random() * 0.08,
-        gravity: 1.5,  // Fast chaotic fall
-        friction: 1,
-        lift: 0,
-        turbulence: 2,
-        phase: 'chaotic_then_calm'
-      },
-      fear: {
-        decay: 0.005 + Math.random() * 0.003,
-        wobbleSpeed: 0.1 + Math.random() * 0.05,
-        gravity: 1.3,
-        friction: 1,
-        lift: 0,
-        turbulence: 1.5,
-        phase: 'trembling'
-      },
-      shame: {
-        decay: 0.003 + Math.random() * 0.002,
-        wobbleSpeed: 0.005 + Math.random() * 0.005,
-        gravity: 0.8,
-        friction: 1,
-        lift: 0,
-        turbulence: 0.2,
-        phase: 'shrinking_then_expanding'
-      },
-      loneliness: {
-        decay: 0.004 + Math.random() * 0.002,
-        wobbleSpeed: 0.015 + Math.random() * 0.01,
-        gravity: 1,
-        friction: 1,
-        lift: 0,
-        turbulence: 0.6,
-        phase: 'seeking'
-      },
-      auto: {
-        decay: 0.005 + Math.random() * 0.003,
-        wobbleSpeed: 0.02 + Math.random() * 0.02,
-        gravity: 1,
-        friction: 1,
-        lift: 0,
-        turbulence: 0.5,
-        phase: 'gentle'
-      }
-    };
-
-    return behaviors[emotion] || behaviors.auto;
-  }
-
+  /**
+   * Trigger all particles to explode
+   */
   releaseText() {
-    this.textParticles.forEach(p => {
-      p.phase = 'waiting';
+    this.particles.forEach(p => {
+      if (p.phase === 'holding') {
+        p.delay = 0; // Immediate explosion
+      }
     });
   }
 
-  triggerDeconstruction(p) {
-    p.phase = 'deconstructing';
-
-    const behavior = p.behavior;
-
-    if (behavior.phase === 'explosive') {
-      // ANGER: VIOLENT outward explosion in ALL directions (not just down)
-      // This creates a true explosion, not a fall
-      const power = 60 + Math.random() * 80;  // MUCH stronger: 60-140
-      const explosionAngle = Math.random() * Math.PI * 2;  // RANDOM direction
-      p.vx = Math.cos(explosionAngle) * power;
-      p.vy = Math.sin(explosionAngle) * power;
-      // Add some initial upward bias for explosion effect
-      if (Math.random() > 0.5) {
-        p.vy -= 20;  // Half go UP initially
-      }
-    } else if (behavior.phase === 'down_then_up') {
-      // SADNESS: Explosive scatter in all directions first
-      p.vx = (Math.random() - 0.5) * 40;  // Wide horizontal scatter
-      p.vy = (Math.random() - 0.5) * 30 - 10;  // Many go UP first
-      p.phase = 'falling';
-      p.fallDuration = 15 + Math.random() * 15;  // Shorter fall, quicker float up
-    } else if (behavior.phase === 'chaotic_then_calm') {
-      // ANXIETY: EXPLOSIVE scatter
-      p.vx = (Math.random() - 0.5) * 60;  // Very wide horizontal
-      p.vy = (Math.random() - 0.5) * 50;  // Vertical chaos both ways
-      p.chaos = 1;
-      p.chaosDecay = 0.015;
-      p.phase = 'chaotic';
-    } else if (behavior.phase === 'trembling') {
-      // FEAR: Explosive start with tremble
-      p.vx = (Math.random() - 0.5) * 35;  // Wide scatter
-      p.vy = (Math.random() - 0.5) * 25 - 5;  // Many go up
-      p.tremble = 1;
-      p.trembleDecay = 0.02;
-    } else if (behavior.phase === 'shrinking_then_expanding') {
-      // SHAME: Explosive after shrink
-      p.vx = (Math.random() - 0.5) * 25;
-      p.vy = (Math.random() - 0.5) * 20 - 5;
-      p.shrinkPhase = true;
-      p.expandTimer = 10 + Math.random() * 10;  // Faster to explosion
-    } else if (behavior.phase === 'seeking') {
-      // LONELINESS: Explosive drift
-      p.vx = (Math.random() - 0.5) * 30;
-      p.vy = (Math.random() - 0.5) * 25 - 3;
-      p.driftAngle = Math.random() * Math.PI * 2;
-    } else {
-      // AUTO/GENTLE: True explosion
-      p.vx = (Math.random() - 0.5) * 35;
-      p.vy = (Math.random() - 0.5) * 25 - 5;
-    }
-  }
-
-  createBurst(emotion) {
-    const palette = EmotionEngine.getPalette(emotion);
-    const behavior = this.getEmotionBehavior(emotion);
-    const isMobile = this.width < 640;
-
-    // Increased particle counts for more dramatic effect (2x-3x)
-    // REDUCED particle counts for 60fps performance
-    let count = isMobile ? 300 : 500;
-    if (emotion === 'anger') count = isMobile ? 400 : 600;
-    else if (emotion === 'anxiety' || emotion === 'fear') count = isMobile ? 350 : 550;
-
-    const waves = 3;
-    const particlesPerWave = Math.floor(count / waves);
-
-    for (let wave = 0; wave < waves; wave++) {
-      setTimeout(() => {
-        this.createWaveParticles(particlesPerWave, emotion, palette, behavior, wave);
-      }, wave * 300);
-    }
-  }
-
-  createWaveParticles(count, emotion, palette, behavior, waveIndex) {
-    // Burst particles spawn from CENTER and explode OUTWARD (not from top)
-    const centerX = this.width / 2;
-    const centerY = this.height / 2;
-
-    for (let i = 0; i < count; i++) {
-      // Start ALL particles at center for true explosion effect
-      const spawnX = centerX;
-      const spawnY = centerY;
-
-      const particleType = Math.random();
-      let size, decayMod;
-
-      // All particles now have NO glow for 60fps performance
-      if (particleType < 0.30) {
-        // Large confetti
-        size = 8 + Math.random() * 12;
-        decayMod = 1;
-      } else if (particleType < 0.50) {
-        // Medium sparkles
-        size = 2 + Math.random() * 4;
-        decayMod = 0.7;
-      } else {
-        // Small mist particles
-        size = 1 + Math.random() * 3;
-        decayMod = 1.5;
-      }
-
-      // EXPLOSIVE velocity in random direction (radial burst from center)
-      const angle = Math.random() * Math.PI * 2;
-      const baseSpeed = emotion === 'anger' ? 25 : (emotion === 'anxiety' ? 20 : 15);
-      const speed = baseSpeed + Math.random() * 15;
-      const vx = Math.cos(angle) * speed;
-      const vy = Math.sin(angle) * speed;
-
-      this.particles.push({
-        x: spawnX,
-        y: spawnY,
-        vx: vx,
-        vy: vy,
-        size: size,
-        baseSize: size,
-        color: palette.journey[Math.floor(Math.random() * 2)],
-        rotation: Math.random() * 360,
-        rotationSpeed: (Math.random() - 0.5) * 15,
-        life: 1,
-        decay: behavior.decay * decayMod,
-        gravity: behavior.gravity * 0.3,
-        friction: behavior.friction,
-        wobble: Math.random() * Math.PI * 2,
-        wobbleSpeed: behavior.wobbleSpeed,
-        emotion: emotion,
-        type: particleType < 0.30 ? 'confetti' : (particleType < 0.50 ? 'sparkle' : 'mist')
-      });
-    }
-  }
-
+  /**
+   * Main animation loop
+   */
   update() {
+    // Clear canvas
     this.ctx.clearRect(0, 0, this.width, this.height);
 
-    this.textParticles = this.textParticles.filter(p => {
-      if (p.phase === 'holding') {
-        p.delay -= 16;
-        if (p.delay <= 0) {
-          this.triggerDeconstruction(p);
-        }
-
-        this.ctx.globalAlpha = 1;
-        this.ctx.fillStyle = p.color;
-        this.ctx.beginPath();
-        this.ctx.arc(p.x, p.y, p.size * 1.2, 0, Math.PI * 2);  // Larger
-        this.ctx.fill();
-
-        return true;
-      }
-
-      if (p.phase === 'waiting') {
-        this.ctx.globalAlpha = 1;
-        this.ctx.fillStyle = p.color;
-        this.ctx.beginPath();
-        this.ctx.arc(p.x, p.y, p.size * 1.2, 0, Math.PI * 2);  // Larger
-        this.ctx.fill();
-
-        return true;
-      }
-
-      if (p.phase === 'falling') {
-        // REDUCED gravity for falling phase - let explosion momentum carry
-        p.vy += p.behavior.gravity * 0.4;
-        p.fallDuration--;
-
-        if (p.fallDuration <= 0) {
-          p.phase = 'rising';
-          p.vy = -3 - Math.random() * 2;  // Fixed upward velocity
-        }
-      } else if (p.phase === 'rising') {
-        // Gradual slow down while rising
-        p.vy *= 0.96;
-        p.vx *= 0.98;
-      } else if (p.tremble !== undefined && p.phase === 'deconstructing') {
-        // Fear - REDUCED gravity with tremble
-        p.vy += p.behavior.gravity * 0.4;
-        p.vx *= 0.98;
-
-        p.tremble -= p.trembleDecay;
-        if (p.tremble > 0) {
-          p.vx += (Math.random() - 0.5) * p.tremble * 3;
-          p.vy += (Math.random() - 0.5) * p.tremble * 2;
-        }
-      } else if (p.shrinkPhase !== undefined) {
-        if (p.shrinkPhase) {
-          // Shame shrink phase - slow down then explode
-          p.vx *= 0.95;
-          p.vy *= 0.95;
-          p.expandTimer--;
-          if (p.expandTimer <= 0) {
-            p.shrinkPhase = false;
-            p.vx = (Math.random() - 0.5) * 15;
-            p.vy = 3 + Math.random() * 8;  // Downward instead of up
-          }
-        } else {
-          // Fall after expanding - REDUCED gravity
-          p.vy += p.behavior.gravity * 0.3;
-          p.vx *= 0.98;
-        }
-      } else if (p.driftAngle !== undefined) {
-        // Loneliness - drift with REDUCED gravity
-        p.vy += p.behavior.gravity * 0.3;
-        p.driftAngle += 0.02;
-        p.vx += Math.cos(p.driftAngle) * 0.3;
-        p.vx *= 0.98;
-      } else if (p.chaos !== undefined && p.phase === 'chaotic') {
-        // Anxiety - REDUCED gravity with chaos
-        p.vy += p.behavior.gravity * 0.4;
-        p.vx *= 0.98;
-
-        p.chaos -= p.chaosDecay;
-        if (p.chaos > 0) {
-          p.vx += (Math.random() - 0.5) * p.chaos * 2;
-          p.vy += (Math.random() - 0.5) * p.chaos * 2;
-        }
-      } else {
-        // Default - anger, auto, etc. - REDUCED gravity so explosion dominates
-        p.vy += p.behavior.gravity * 0.3;  // Only 30% gravity initially
-        // Minimal air resistance only on x
-        p.vx *= 0.995;
-      }
-
-      p.x += p.vx;
-      p.y += p.vy;
-
-      p.wobble += p.wobbleSpeed;
-      p.x += Math.sin(p.wobble) * 0.3;
-
-      // REMOVED trail update code - trails removed for performance
-
-      p.life -= p.decay;
-
-      const progress = 1 - p.life;
-      p.color = this.getColorAtStage(p.emotion, progress);
-
-      if (p.life > 0) {
-        // REMOVED trail rendering, additive blending, and shadowBlur - all too expensive
-        // Draw main particle - larger and more visible
-        this.ctx.globalAlpha = p.life;
-        this.ctx.fillStyle = p.color;
-        this.ctx.beginPath();
-        // Larger size for visibility - don't shrink as much with life
-        this.ctx.arc(p.x, p.y, p.size * (0.8 + p.life * 0.4), 0, Math.PI * 2);
-        this.ctx.fill();
-      }
-
-      return p.life > 0;
-    });
-
+    // Update and draw particles
     this.particles = this.particles.filter(p => {
-      p.vy += p.gravity;  // Already reduced in createWaveParticles
-      p.vx *= p.friction;
-      p.vy *= p.friction;
-
-      p.x += p.vx;
-      p.y += p.vy;
-      p.rotation += p.rotationSpeed;
-
-      p.wobble += p.wobbleSpeed;
-      p.x += Math.sin(p.wobble) * 0.8;
-
-      p.life -= p.decay;
-
-      const progress = 1 - p.life;
-      p.color = this.getColorAtStage(p.emotion || 'auto', progress);
-
-      if (p.life > 0) {
-        this.ctx.save();
-
-        // REMOVED additive blending - expensive
-        // REMOVED shadowBlur - EXTREMELY expensive, kills fps
-
-        this.ctx.translate(p.x, p.y);
-        this.ctx.rotate(p.rotation * Math.PI / 180);
-        this.ctx.globalAlpha = p.life;
-        this.ctx.fillStyle = p.color;
-
-        if (p.type === 'confetti') {
-          this.ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
-        } else if (p.type === 'sparkle') {
-          this.ctx.beginPath();
-          this.ctx.moveTo(0, -p.size);
-          this.ctx.lineTo(p.size * 0.3, 0);
-          this.ctx.lineTo(0, p.size);
-          this.ctx.lineTo(-p.size * 0.3, 0);
-          this.ctx.closePath();
-          this.ctx.fill();
-        } else {
-          this.ctx.beginPath();
-          this.ctx.arc(0, 0, p.size, 0, Math.PI * 2);
-          this.ctx.fill();
-        }
-
-        this.ctx.restore();
+      const alive = p.update();
+      if (alive && p.life > 0) {
+        p.draw(this.ctx);
       }
-
-      return p.life > 0 && p.y < this.height + 100;
+      return alive;
     });
 
+    // Reset alpha
     this.ctx.globalAlpha = 1;
 
-    return this.textParticles.length > 0 || this.particles.length > 0;
+    // Return true if any particles remain
+    return this.particles.length > 0;
   }
 
+  /**
+   * Start animation loop
+   */
   start() {
     this.isRunning = true;
     const animate = () => {
@@ -717,9 +540,11 @@ class EmotionalParticleSystem {
     animate();
   }
 
+  /**
+   * Reset system
+   */
   reset() {
     this.particles = [];
-    this.textParticles = [];
     this.ctx.clearRect(0, 0, this.width, this.height);
     this.isRunning = false;
   }
