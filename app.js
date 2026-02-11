@@ -275,7 +275,7 @@ class EmotionalParticleSystem {
     const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
     const pixels = imageData.data;
 
-    const gap = 3; // Pixel sampling gap
+    const gap = 6; // INCREASED for 60fps - was 4, now 6 (56% fewer particles)
     const behavior = this.getEmotionBehavior(emotion);
     const centerX = this.width / 2;
     const centerY = textY;
@@ -294,38 +294,28 @@ class EmotionalParticleSystem {
           // Staggered delay for more dramatic shatter effect
           const delay = Math.random() * 400;
 
-          // Text particles get glow based on distance from center (more dramatic)
-          // Only 20% of text particles get glow for performance
-          const hasGlow = Math.random() > 0.8;
-          const glowIntensity = 0.5 + Math.random() * 0.5;
-
           this.textParticles.push({
             x: x,
             y: y,
             originX: x,
             originY: y,
-            targetX: x + (Math.random() - 0.5) * this.width * 1.2, // Wider spread
-            targetY: this.height + 150 + Math.random() * 300, // Fall further
+            targetX: x + (Math.random() - 0.5) * this.width * 1.2,
+            targetY: this.height + 150 + Math.random() * 300,
             vx: 0,
             vy: 0,
             size: gap - 1,
             baseSize: gap - 1,
             color: palette.primary,
-            glowColor: palette.peak,
             emotion: emotion,
             distance: distance,
             angle: angle,
             life: 1,
-            decay: 0.0015 + Math.random() * 0.0015, // Slower fade
+            decay: 0.0015 + Math.random() * 0.0015,
             wobble: Math.random() * Math.PI * 2,
             wobbleSpeed: behavior.wobbleSpeed,
             behavior: behavior,
             delay: delay,
-            phase: 'holding',
-            trail: [],
-            maxTrailLength: 15, // Longer trails for more drama
-            hasGlow: hasGlow,
-            glowIntensity: glowIntensity
+            phase: 'holding'
           });
         }
       }
@@ -468,10 +458,10 @@ class EmotionalParticleSystem {
     const isMobile = this.width < 640;
 
     // Increased particle counts for more dramatic effect (2x-3x)
-    // Performance-balanced particle counts
-    let count = isMobile ? 800 : 1500;
-    if (emotion === 'anger') count = isMobile ? 1200 : 2500;
-    else if (emotion === 'anxiety' || emotion === 'fear') count = isMobile ? 1000 : 2000;
+    // REDUCED particle counts for 60fps performance
+    let count = isMobile ? 300 : 500;
+    if (emotion === 'anger') count = isMobile ? 400 : 600;
+    else if (emotion === 'anxiety' || emotion === 'fear') count = isMobile ? 350 : 550;
 
     const waves = 3;
     const particlesPerWave = Math.floor(count / waves);
@@ -494,31 +484,25 @@ class EmotionalParticleSystem {
       const spawnY = centerY;
 
       const particleType = Math.random();
-      let size, decayMod, hasGlow, glowIntensity;
+      let size, decayMod;
 
+      // All particles now have NO glow for 60fps performance
       if (particleType < 0.30) {
-        // Large confetti - main show particles with strong glow
+        // Large confetti
         size = 8 + Math.random() * 12;
         decayMod = 1;
-        hasGlow = true;
-        glowIntensity = 1.0;
       } else if (particleType < 0.50) {
-        // Medium sparkles - moderate glow
+        // Medium sparkles
         size = 2 + Math.random() * 4;
         decayMod = 0.7;
-        hasGlow = Math.random() > 0.6; // 40% have glow (reduced from 70%)
-        glowIntensity = 0.6 + Math.random() * 0.4;
       } else {
-        // Small mist particles - subtle or no glow
+        // Small mist particles
         size = 1 + Math.random() * 3;
         decayMod = 1.5;
-        hasGlow = Math.random() > 0.85; // Only 15% have subtle glow
-        glowIntensity = 0.3 + Math.random() * 0.3;
       }
 
       // EXPLOSIVE velocity in random direction (radial burst from center)
       const angle = Math.random() * Math.PI * 2;
-      // Higher speed for more dramatic explosion, especially for anger
       const baseSpeed = emotion === 'anger' ? 25 : (emotion === 'anxiety' ? 20 : 15);
       const speed = baseSpeed + Math.random() * 15;
       const vx = Math.cos(angle) * speed;
@@ -532,21 +516,16 @@ class EmotionalParticleSystem {
         size: size,
         baseSize: size,
         color: palette.journey[Math.floor(Math.random() * 2)],
-        glowColor: palette.peak,
         rotation: Math.random() * 360,
         rotationSpeed: (Math.random() - 0.5) * 15,
         life: 1,
         decay: behavior.decay * decayMod,
-        gravity: behavior.gravity * 0.3,  // Reduced gravity so explosion dominates
+        gravity: behavior.gravity * 0.3,
         friction: behavior.friction,
         wobble: Math.random() * Math.PI * 2,
         wobbleSpeed: behavior.wobbleSpeed,
         emotion: emotion,
-        type: particleType < 0.30 ? 'confetti' : (particleType < 0.50 ? 'sparkle' : 'mist'),
-        hasGlow: hasGlow,
-        glowIntensity: glowIntensity,
-        trail: [],
-        maxTrailLength: hasGlow ? 15 : 8
+        type: particleType < 0.30 ? 'confetti' : (particleType < 0.50 ? 'sparkle' : 'mist')
       });
     }
   }
@@ -648,12 +627,7 @@ class EmotionalParticleSystem {
       p.wobble += p.wobbleSpeed;
       p.x += Math.sin(p.wobble) * 0.3;
 
-      if (p.maxTrailLength > 0) {
-        p.trail.push({ x: p.x, y: p.y });
-        if (p.trail.length > p.maxTrailLength) {
-          p.trail.shift();
-        }
-      }
+      // REMOVED trail update code - trails removed for performance
 
       p.life -= p.decay;
 
@@ -661,43 +635,13 @@ class EmotionalParticleSystem {
       p.color = this.getColorAtStage(p.emotion, progress);
 
       if (p.life > 0) {
-        // Draw trail with glow
-        if (p.trail.length > 1) {
-          this.ctx.beginPath();
-          this.ctx.moveTo(p.trail[0].x, p.trail[0].y);
-          for (let i = 1; i < p.trail.length; i++) {
-            this.ctx.lineTo(p.trail[i].x, p.trail[i].y);
-          }
-          this.ctx.strokeStyle = p.color;
-          this.ctx.globalAlpha = p.life * 0.5;
-          this.ctx.lineWidth = p.size * 0.8;
-          this.ctx.lineCap = 'round';
-          this.ctx.stroke();
-        }
-
-        // Additive blending for glow effect
-        this.ctx.globalCompositeOperation = 'lighter';
-
-        // Bloom glow for particles that have it
-        if (p.hasGlow && p.glowIntensity) {
-          // Reduced blur radius for better performance
-          const glowRadius = p.size * 2 * p.life * p.glowIntensity;
-          this.ctx.shadowBlur = glowRadius;
-          this.ctx.shadowColor = p.glowColor;
-        } else {
-          this.ctx.shadowBlur = 0;
-        }
-
-        // Draw main particle
+        // REMOVED trail rendering, additive blending, and shadowBlur - all too expensive
+        // Draw main particle - simple and fast
         this.ctx.globalAlpha = p.life;
         this.ctx.fillStyle = p.color;
         this.ctx.beginPath();
         this.ctx.arc(p.x, p.y, p.size * (0.5 + p.life * 0.5), 0, Math.PI * 2);
         this.ctx.fill();
-
-        // Reset effects
-        this.ctx.shadowBlur = 0;
-        this.ctx.globalCompositeOperation = 'source-over';
       }
 
       return p.life > 0;
@@ -723,16 +667,8 @@ class EmotionalParticleSystem {
       if (p.life > 0) {
         this.ctx.save();
 
-        // Additive blending for glow effect on burst particles
-        this.ctx.globalCompositeOperation = 'lighter';
-
-        // Bloom glow
-        if (p.hasGlow && p.glowIntensity) {
-          // Reduced blur radius for better performance
-          const glowRadius = p.baseSize * 2.5 * p.life * p.glowIntensity;
-          this.ctx.shadowBlur = glowRadius;
-          this.ctx.shadowColor = p.glowColor;
-        }
+        // REMOVED additive blending - expensive
+        // REMOVED shadowBlur - EXTREMELY expensive, kills fps
 
         this.ctx.translate(p.x, p.y);
         this.ctx.rotate(p.rotation * Math.PI / 180);
@@ -762,8 +698,6 @@ class EmotionalParticleSystem {
     });
 
     this.ctx.globalAlpha = 1;
-    this.ctx.globalCompositeOperation = 'source-over';
-    this.ctx.shadowBlur = 0;
 
     return this.textParticles.length > 0 || this.particles.length > 0;
   }
@@ -1616,9 +1550,7 @@ class SadnessConfetti {
     this.particles.releaseText();
     this.particles.start();
 
-    // Add burst particles from top for extra drama
-    this.particles.createBurst(emotion);
-
+    // Text particles shatter from their actual text positions - no separate burst
     await this.delay(500);
     // Hide the text preview permanently - it's now particles
     this.textPreview.style.opacity = '0';
