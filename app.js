@@ -241,7 +241,8 @@ class Particle {
     this.life = 1.0;
     this.decay = 0.003 + Math.random() * 0.003;
     this.color = palette.peak;
-    this.colorIndex = 0;
+    // Start from middle of journey for better visibility
+    this.colorIndex = 3;
     this.journey = palette.journey;
 
     // State
@@ -411,11 +412,21 @@ class Particle {
   }
 
   draw(ctx) {
+    // Validate context
+    if (!ctx) {
+      console.error('[Particle] draw() called with null context!');
+      return;
+    }
     ctx.fillStyle = this.journey[this.colorIndex];
     ctx.globalAlpha = this.life;
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
     ctx.fill();
+    // Debug: log first draw call
+    if (this._firstDraw === undefined) {
+      this._firstDraw = true;
+      console.log('[Particle] First draw at:', this.x, this.y, 'size:', this.size.toFixed(2), 'color:', this.journey[this.colorIndex], 'alpha:', this.life.toFixed(3));
+    }
   }
 }
 
@@ -428,6 +439,9 @@ class EmotionalParticleSystem {
     console.log('[EmotionalParticleSystem] Constructor called with canvas:', canvas);
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d', { alpha: true });
+    if (!this.ctx) {
+      console.error('[EmotionalParticleSystem] Failed to get 2d context!');
+    }
     console.log('[EmotionalParticleSystem] Canvas context:', this.ctx);
     console.log('[EmotionalParticleSystem] Canvas size:', canvas.width, 'x', canvas.height);
     this.particles = [];
@@ -447,6 +461,7 @@ class EmotionalParticleSystem {
     // Set canvas size (CSS handles display size)
     this.canvas.width = this.width;
     this.canvas.height = this.height;
+    console.log('[Particle System] Canvas resized to:', this.width, 'x', this.height);
   }
 
   /**
@@ -455,8 +470,11 @@ class EmotionalParticleSystem {
   createTextParticles(text, emotion) {
     this.particles = [];
 
+    console.log('[Particle System] createTextParticles called, canvas size:', this.width, 'x', this.height);
+
     // Get color palette
     const palette = EmotionEngine.getPalette(emotion);
+    console.log('[Particle System] Palette:', palette);
 
     // Create offscreen canvas for text rendering
     const offCanvas = document.createElement('canvas');
@@ -489,14 +507,33 @@ class EmotionalParticleSystem {
         const index = (y * this.width + x) * 4;
         if (pixels[index + 3] > 128) {
           // Create particle at this position
-          this.particles.push(new Particle(x, y, emotion, palette));
+          const p = new Particle(x, y, emotion, palette);
+          this.particles.push(p);
           particleCount++;
+          // Log first particle
+          if (particleCount === 1) {
+            console.log('[Particle System] First particle at:', x, y, 'size:', p.size, 'color:', p.journey[0]);
+          }
         }
       }
     }
 
     console.log(`[Particle System] Created ${particleCount} particles from text: "${text}"`);
     console.log(`[Particle System] Canvas size: ${this.width}x${this.height}, Font size: ${fontSize}px`);
+
+    // Verify particles array
+    if (this.particles.length > 0) {
+      const sample = this.particles[0];
+      console.log('[Particle System] Sample particle:', {
+        x: sample.x,
+        y: sample.y,
+        size: sample.size,
+        life: sample.life,
+        colorIndex: sample.colorIndex,
+        journey: sample.journey,
+        phase: sample.phase
+      });
+    }
   }
 
   /**
@@ -518,18 +555,33 @@ class EmotionalParticleSystem {
     this.ctx.clearRect(0, 0, this.width, this.height);
 
     // Debug: log frame
-    if (this.particles.length > 0 && Math.random() < 0.02) {
-      console.log(`[Particle System] Drawing ${this.particles.length} particles`);
+    if (this._frameCount === undefined) this._frameCount = 0;
+    this._frameCount++;
+
+    if (this.particles.length > 0) {
+      if (this._frameCount === 1) {
+        console.log('[Particle System] First update call - drawing', this.particles.length, 'particles');
+      }
+      if (this._frameCount % 60 === 0) {
+        console.log(`[Particle System] Frame ${this._frameCount}: ${this.particles.length} particles, canvas ${this.width}x${this.height}`);
+      }
     }
+
+    let drawnCount = 0;
 
     // Update and draw particles
     this.particles = this.particles.filter(p => {
       const alive = p.update();
       if (alive && p.life > 0) {
         p.draw(this.ctx);
+        drawnCount++;
       }
       return alive;
     });
+
+    if (this._frameCount === 1 && this.particles.length > 0) {
+      console.log('[Particle System] Drew', drawnCount, 'particles in first frame');
+    }
 
     // Reset alpha
     this.ctx.globalAlpha = 1;
@@ -542,12 +594,18 @@ class EmotionalParticleSystem {
    * Start animation loop
    */
   start() {
-    console.log('[Particle System] Starting animation loop');
+    console.log('[Particle System] Starting animation loop, canvas size:', this.canvas.width, 'x', this.canvas.height);
+    console.log('[Particle System] Particles to animate:', this.particles.length);
     this.isRunning = true;
+    let frameCount = 0;
     const animate = () => {
       if (!this.isRunning) return;
+      frameCount++;
       const hasParticles = this.update();
       if (hasParticles) {
+        if (frameCount % 30 === 0) {
+          console.log('[Particle System] Frame', frameCount + ', particles:', this.particles.length);
+        }
         requestAnimationFrame(animate);
       } else {
         console.log('[Particle System] Animation loop ended - no particles');
