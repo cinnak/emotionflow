@@ -275,7 +275,7 @@ class EmotionalParticleSystem {
     const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
     const pixels = imageData.data;
 
-    const gap = 6; // INCREASED for 60fps - was 4, now 6 (56% fewer particles)
+    const gap = 4; // Balance between performance and visual density
     const behavior = this.getEmotionBehavior(emotion);
     const centerX = this.width / 2;
     const centerY = textY;
@@ -303,9 +303,9 @@ class EmotionalParticleSystem {
             targetY: this.height + 150 + Math.random() * 300,
             vx: 0,
             vy: 0,
-            size: gap - 1,
-            baseSize: gap - 1,
-            color: palette.primary,
+            size: gap + 1,  // Larger particles for better visibility
+            baseSize: gap + 1,
+            color: palette.peak,  // Use brighter peak color for visibility
             emotion: emotion,
             distance: distance,
             angle: angle,
@@ -543,7 +543,7 @@ class EmotionalParticleSystem {
         this.ctx.globalAlpha = 1;
         this.ctx.fillStyle = p.color;
         this.ctx.beginPath();
-        this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        this.ctx.arc(p.x, p.y, p.size * 1.2, 0, Math.PI * 2);  // Larger
         this.ctx.fill();
 
         return true;
@@ -553,7 +553,7 @@ class EmotionalParticleSystem {
         this.ctx.globalAlpha = 1;
         this.ctx.fillStyle = p.color;
         this.ctx.beginPath();
-        this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        this.ctx.arc(p.x, p.y, p.size * 1.2, 0, Math.PI * 2);  // Larger
         this.ctx.fill();
 
         return true;
@@ -636,11 +636,12 @@ class EmotionalParticleSystem {
 
       if (p.life > 0) {
         // REMOVED trail rendering, additive blending, and shadowBlur - all too expensive
-        // Draw main particle - simple and fast
+        // Draw main particle - larger and more visible
         this.ctx.globalAlpha = p.life;
         this.ctx.fillStyle = p.color;
         this.ctx.beginPath();
-        this.ctx.arc(p.x, p.y, p.size * (0.5 + p.life * 0.5), 0, Math.PI * 2);
+        // Larger size for visibility - don't shrink as much with life
+        this.ctx.arc(p.x, p.y, p.size * (0.8 + p.life * 0.4), 0, Math.PI * 2);
         this.ctx.fill();
       }
 
