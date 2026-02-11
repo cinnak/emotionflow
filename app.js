@@ -336,61 +336,61 @@ class EmotionalParticleSystem {
   getEmotionBehavior(emotion) {
     const behaviors = {
       sadness: {
-        decay: 0.002 + Math.random() * 0.002,
+        decay: 0.003 + Math.random() * 0.002,
         wobbleSpeed: 0.01 + Math.random() * 0.01,
-        gravity: 0.05,
-        friction: 0.99,
-        lift: -0.3,
-        turbulence: 0.2,
+        gravity: 0.3,  // Increased for faster fall
+        friction: 0.98,
+        lift: -0.2,
+        turbulence: 0.3,
         phase: 'down_then_up'
       },
       anger: {
-        decay: 0.008 + Math.random() * 0.005,
+        decay: 0.012 + Math.random() * 0.008,
         wobbleSpeed: 0.05 + Math.random() * 0.05,
-        gravity: 0.3,
-        friction: 0.96,
-        lift: -2,
-        turbulence: 2,
+        gravity: 0.8,  // Much stronger gravity
+        friction: 0.94,
+        lift: 1,  // Less upward lift, more explosive downward
+        turbulence: 3,
         phase: 'explosive'
       },
       anxiety: {
-        decay: 0.004 + Math.random() * 0.003,
+        decay: 0.006 + Math.random() * 0.004,
         wobbleSpeed: 0.08 + Math.random() * 0.08,
-        gravity: 0.1,
-        friction: 0.98,
-        lift: -0.5,
-        turbulence: 1.5,
+        gravity: 0.4,  // Increased
+        friction: 0.97,
+        lift: -0.3,
+        turbulence: 2,
         phase: 'chaotic_then_calm'
       },
       fear: {
-        decay: 0.003 + Math.random() * 0.002,
+        decay: 0.004 + Math.random() * 0.003,
         wobbleSpeed: 0.1 + Math.random() * 0.05,
-        gravity: 0.08,
-        friction: 0.985,
-        lift: -0.8,
-        turbulence: 1.2,
+        gravity: 0.35,  // Increased
+        friction: 0.97,
+        lift: -0.5,
+        turbulence: 1.5,
         phase: 'trembling'
       },
       shame: {
-        decay: 0.0015 + Math.random() * 0.001,
+        decay: 0.002 + Math.random() * 0.0015,
         wobbleSpeed: 0.005 + Math.random() * 0.005,
-        gravity: 0.02,
-        friction: 0.995,
-        lift: -0.1,
-        turbulence: 0.1,
+        gravity: 0.15,  // Increased
+        friction: 0.99,
+        lift: -0.05,
+        turbulence: 0.2,
         phase: 'shrinking_then_expanding'
       },
       loneliness: {
-        decay: 0.0025 + Math.random() * 0.0015,
+        decay: 0.003 + Math.random() * 0.002,
         wobbleSpeed: 0.015 + Math.random() * 0.01,
-        gravity: 0.04,
-        friction: 0.99,
-        lift: -0.4,
-        turbulence: 0.5,
+        gravity: 0.25,  // Increased
+        friction: 0.98,
+        lift: -0.3,
+        turbulence: 0.6,
         phase: 'seeking'
       },
       auto: {
-        decay: 0.003 + Math.random() * 0.002,
+        decay: 0.004 + Math.random() * 0.003,
         wobbleSpeed: 0.02 + Math.random() * 0.02,
         gravity: 0.1,
         friction: 0.98,
@@ -415,44 +415,44 @@ class EmotionalParticleSystem {
     const behavior = p.behavior;
 
     if (behavior.phase === 'explosive') {
-      // ANGER: Dramatic outward explosion from text
-      const power = 25 + Math.random() * 30;
-      p.vx = Math.cos(p.angle) * power + (Math.random() - 0.5) * 15;
-      p.vy = Math.sin(p.angle) * power + (Math.random() - 0.5) * 15 - 5;
+      // ANGER: Dramatic outward explosion from text - MUCH faster
+      const power = 40 + Math.random() * 50;  // Increased from 25-55 to 40-90
+      p.vx = Math.cos(p.angle) * power + (Math.random() - 0.5) * 30;
+      p.vy = Math.sin(p.angle) * power + (Math.random() - 0.5) * 30 + 5;  // More downward
     } else if (behavior.phase === 'down_then_up') {
-      // SADNESS: Falls slightly then floats up beautifully
-      p.vx = (Math.random() - 0.5) * 6;
-      p.vy = 3 + Math.random() * 6;
+      // SADNESS: Falls faster then floats up
+      p.vx = (Math.random() - 0.5) * 10;  // Increased spread
+      p.vy = 8 + Math.random() * 10;  // Much faster initial fall
       p.phase = 'falling';
-      p.fallDuration = 40 + Math.random() * 40;
+      p.fallDuration = 25 + Math.random() * 25;  // Shorter fall, quicker float up
     } else if (behavior.phase === 'chaotic_then_calm') {
-      // ANXIETY: Scattered, chaotic movement
-      p.vx = (Math.random() - 0.5) * 18;
-      p.vy = (Math.random() - 0.5) * 18 + 3;
+      // ANXIETY: More aggressive scatter
+      p.vx = (Math.random() - 0.5) * 30;  // Increased from 18
+      p.vy = (Math.random() - 0.5) * 25 + 5;  // Increased
       p.chaos = 1;
-      p.chaosDecay = 0.01;
+      p.chaosDecay = 0.015;
       p.phase = 'chaotic';
     } else if (behavior.phase === 'trembling') {
-      // FEAR: Nervous shaking movement
-      p.vx = (Math.random() - 0.5) * 12;
-      p.vy = 2 + Math.random() * 7;
+      // FEAR: More dramatic trembling
+      p.vx = (Math.random() - 0.5) * 20;  // Increased from 12
+      p.vy = 5 + Math.random() * 12;  // Increased from 2-9
       p.tremble = 1;
-      p.trembleDecay = 0.015;
+      p.trembleDecay = 0.02;
     } else if (behavior.phase === 'shrinking_then_expanding') {
-      // SHAME: Slow, gentle release
-      p.vx = (Math.random() - 0.5) * 3;
-      p.vy = 1 + Math.random() * 3;
+      // SHAME: A bit faster
+      p.vx = (Math.random() - 0.5) * 6;
+      p.vy = 3 + Math.random() * 5;
       p.shrinkPhase = true;
-      p.expandTimer = 30 + Math.random() * 30;
+      p.expandTimer = 20 + Math.random() * 20;
     } else if (behavior.phase === 'seeking') {
-      // LONELINESS: Drifting, searching movement
-      p.vx = (Math.random() - 0.5) * 7;
-      p.vy = 2 + Math.random() * 4;
+      // LONELINESS: More momentum
+      p.vx = (Math.random() - 0.5) * 12;  // Increased from 7
+      p.vy = 4 + Math.random() * 8;  // Increased from 2-6
       p.driftAngle = Math.random() * Math.PI * 2;
     } else {
-      // AUTO/GENTLE: Balanced release
-      p.vx = (Math.random() - 0.5) * 8;
-      p.vy = 3 + Math.random() * 6;
+      // AUTO/GENTLE: Balanced release but faster
+      p.vx = (Math.random() - 0.5) * 15;  // Increased from 8
+      p.vy = 6 + Math.random() * 10;  // Increased from 3-9
     }
   }
 
@@ -505,8 +505,9 @@ class EmotionalParticleSystem {
         glowIntensity = 0.3 + Math.random() * 0.3;
       }
 
-      const vx = (Math.random() - 0.5) * 6;
-      const vy = 2 + Math.random() * 4;
+      // Faster burst particles for more impact
+      const vx = (Math.random() - 0.5) * 15;  // Increased from 6
+      const vy = 5 + Math.random() * 10;  // Increased from 2-6
 
       this.particles.push({
         x: spawnX,
@@ -1600,6 +1601,8 @@ class SadnessConfetti {
     this.particles.createBurst(emotion);
 
     await this.delay(500);
+    // Hide the text preview permanently - it's now particles
+    this.textPreview.style.opacity = '0';
     this.releaseContainer.classList.remove('active');
     this.releaseContainer.classList.remove('shattering');
     this.releaseContainer.classList.remove(emotion);
