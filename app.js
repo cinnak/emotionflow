@@ -295,7 +295,8 @@ class EmotionalParticleSystem {
           const delay = Math.random() * 400;
 
           // Text particles get glow based on distance from center (more dramatic)
-          const hasGlow = Math.random() > 0.4;
+          // Only 20% of text particles get glow for performance
+          const hasGlow = Math.random() > 0.8;
           const glowIntensity = 0.5 + Math.random() * 0.5;
 
           this.textParticles.push({
@@ -461,9 +462,10 @@ class EmotionalParticleSystem {
     const isMobile = this.width < 640;
 
     // Increased particle counts for more dramatic effect (2x-3x)
-    let count = isMobile ? 2000 : 4000;
-    if (emotion === 'anger') count = isMobile ? 3000 : 6000;
-    else if (emotion === 'anxiety' || emotion === 'fear') count = isMobile ? 2500 : 5000;
+    // Performance-balanced particle counts
+    let count = isMobile ? 800 : 1500;
+    if (emotion === 'anger') count = isMobile ? 1200 : 2500;
+    else if (emotion === 'anxiety' || emotion === 'fear') count = isMobile ? 1000 : 2000;
 
     const waves = 3;
     const particlesPerWave = Math.floor(count / waves);
@@ -493,13 +495,13 @@ class EmotionalParticleSystem {
         // Medium sparkles - moderate glow
         size = 2 + Math.random() * 4;
         decayMod = 0.7;
-        hasGlow = Math.random() > 0.3; // 70% have glow
+        hasGlow = Math.random() > 0.6; // 40% have glow (reduced from 70%)
         glowIntensity = 0.6 + Math.random() * 0.4;
       } else {
         // Small mist particles - subtle or no glow
         size = 1 + Math.random() * 3;
         decayMod = 1.5;
-        hasGlow = Math.random() > 0.7; // 30% have subtle glow
+        hasGlow = Math.random() > 0.85; // Only 15% have subtle glow
         glowIntensity = 0.3 + Math.random() * 0.3;
       }
 
@@ -658,7 +660,8 @@ class EmotionalParticleSystem {
 
         // Bloom glow for particles that have it
         if (p.hasGlow && p.glowIntensity) {
-          const glowRadius = p.size * 4 * p.life * p.glowIntensity;
+          // Reduced blur radius for better performance
+          const glowRadius = p.size * 2 * p.life * p.glowIntensity;
           this.ctx.shadowBlur = glowRadius;
           this.ctx.shadowColor = p.glowColor;
         } else {
@@ -705,7 +708,8 @@ class EmotionalParticleSystem {
 
         // Bloom glow
         if (p.hasGlow && p.glowIntensity) {
-          const glowRadius = p.baseSize * 5 * p.life * p.glowIntensity;
+          // Reduced blur radius for better performance
+          const glowRadius = p.baseSize * 2.5 * p.life * p.glowIntensity;
           this.ctx.shadowBlur = glowRadius;
           this.ctx.shadowColor = p.glowColor;
         }
