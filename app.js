@@ -415,44 +415,50 @@ class EmotionalParticleSystem {
     const behavior = p.behavior;
 
     if (behavior.phase === 'explosive') {
-      // ANGER: Dramatic outward explosion from text - MUCH faster
-      const power = 40 + Math.random() * 50;  // Increased from 25-55 to 40-90
-      p.vx = Math.cos(p.angle) * power + (Math.random() - 0.5) * 30;
-      p.vy = Math.sin(p.angle) * power + (Math.random() - 0.5) * 30 + 5;  // More downward
+      // ANGER: VIOLENT outward explosion in ALL directions (not just down)
+      // This creates a true explosion, not a fall
+      const power = 60 + Math.random() * 80;  // MUCH stronger: 60-140
+      const explosionAngle = Math.random() * Math.PI * 2;  // RANDOM direction
+      p.vx = Math.cos(explosionAngle) * power;
+      p.vy = Math.sin(explosionAngle) * power;
+      // Add some initial upward bias for explosion effect
+      if (Math.random() > 0.5) {
+        p.vy -= 20;  // Half go UP initially
+      }
     } else if (behavior.phase === 'down_then_up') {
-      // SADNESS: Falls faster then floats up
-      p.vx = (Math.random() - 0.5) * 10;  // Increased spread
-      p.vy = 8 + Math.random() * 10;  // Much faster initial fall
+      // SADNESS: Explosive scatter in all directions first
+      p.vx = (Math.random() - 0.5) * 40;  // Wide horizontal scatter
+      p.vy = (Math.random() - 0.5) * 30 - 10;  // Many go UP first
       p.phase = 'falling';
-      p.fallDuration = 25 + Math.random() * 25;  // Shorter fall, quicker float up
+      p.fallDuration = 15 + Math.random() * 15;  // Shorter fall, quicker float up
     } else if (behavior.phase === 'chaotic_then_calm') {
-      // ANXIETY: More aggressive scatter
-      p.vx = (Math.random() - 0.5) * 30;  // Increased from 18
-      p.vy = (Math.random() - 0.5) * 25 + 5;  // Increased
+      // ANXIETY: EXPLOSIVE scatter
+      p.vx = (Math.random() - 0.5) * 60;  // Very wide horizontal
+      p.vy = (Math.random() - 0.5) * 50;  // Vertical chaos both ways
       p.chaos = 1;
       p.chaosDecay = 0.015;
       p.phase = 'chaotic';
     } else if (behavior.phase === 'trembling') {
-      // FEAR: More dramatic trembling
-      p.vx = (Math.random() - 0.5) * 20;  // Increased from 12
-      p.vy = 5 + Math.random() * 12;  // Increased from 2-9
+      // FEAR: Explosive start with tremble
+      p.vx = (Math.random() - 0.5) * 35;  // Wide scatter
+      p.vy = (Math.random() - 0.5) * 25 - 5;  // Many go up
       p.tremble = 1;
       p.trembleDecay = 0.02;
     } else if (behavior.phase === 'shrinking_then_expanding') {
-      // SHAME: A bit faster
-      p.vx = (Math.random() - 0.5) * 6;
-      p.vy = 3 + Math.random() * 5;
+      // SHAME: Explosive after shrink
+      p.vx = (Math.random() - 0.5) * 25;
+      p.vy = (Math.random() - 0.5) * 20 - 5;
       p.shrinkPhase = true;
-      p.expandTimer = 20 + Math.random() * 20;
+      p.expandTimer = 10 + Math.random() * 10;  // Faster to explosion
     } else if (behavior.phase === 'seeking') {
-      // LONELINESS: More momentum
-      p.vx = (Math.random() - 0.5) * 12;  // Increased from 7
-      p.vy = 4 + Math.random() * 8;  // Increased from 2-6
+      // LONELINESS: Explosive drift
+      p.vx = (Math.random() - 0.5) * 30;
+      p.vy = (Math.random() - 0.5) * 25 - 3;
       p.driftAngle = Math.random() * Math.PI * 2;
     } else {
-      // AUTO/GENTLE: Balanced release but faster
-      p.vx = (Math.random() - 0.5) * 15;  // Increased from 8
-      p.vy = 6 + Math.random() * 10;  // Increased from 3-9
+      // AUTO/GENTLE: True explosion
+      p.vx = (Math.random() - 0.5) * 35;
+      p.vy = (Math.random() - 0.5) * 25 - 5;
     }
   }
 
@@ -478,9 +484,14 @@ class EmotionalParticleSystem {
   }
 
   createWaveParticles(count, emotion, palette, behavior, waveIndex) {
+    // Burst particles spawn from CENTER and explode OUTWARD (not from top)
+    const centerX = this.width / 2;
+    const centerY = this.height / 2;
+
     for (let i = 0; i < count; i++) {
-      const spawnX = Math.random() * this.width;
-      const spawnY = -50 - Math.random() * 100;
+      // Start ALL particles at center for true explosion effect
+      const spawnX = centerX;
+      const spawnY = centerY;
 
       const particleType = Math.random();
       let size, decayMod, hasGlow, glowIntensity;
@@ -505,9 +516,13 @@ class EmotionalParticleSystem {
         glowIntensity = 0.3 + Math.random() * 0.3;
       }
 
-      // Faster burst particles for more impact
-      const vx = (Math.random() - 0.5) * 15;  // Increased from 6
-      const vy = 5 + Math.random() * 10;  // Increased from 2-6
+      // EXPLOSIVE velocity in random direction (radial burst from center)
+      const angle = Math.random() * Math.PI * 2;
+      // Higher speed for more dramatic explosion, especially for anger
+      const baseSpeed = emotion === 'anger' ? 25 : (emotion === 'anxiety' ? 20 : 15);
+      const speed = baseSpeed + Math.random() * 15;
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
 
       this.particles.push({
         x: spawnX,
@@ -522,7 +537,7 @@ class EmotionalParticleSystem {
         rotationSpeed: (Math.random() - 0.5) * 15,
         life: 1,
         decay: behavior.decay * decayMod,
-        gravity: behavior.gravity,  // Full gravity, no reduction
+        gravity: behavior.gravity * 0.3,  // Reduced gravity so explosion dominates
         friction: behavior.friction,
         wobble: Math.random() * Math.PI * 2,
         wobbleSpeed: behavior.wobbleSpeed,
@@ -566,8 +581,8 @@ class EmotionalParticleSystem {
       }
 
       if (p.phase === 'falling') {
-        // Direct gravity for falling phase - much faster
-        p.vy += p.behavior.gravity;
+        // REDUCED gravity for falling phase - let explosion momentum carry
+        p.vy += p.behavior.gravity * 0.4;
         p.fallDuration--;
 
         if (p.fallDuration <= 0) {
@@ -579,8 +594,8 @@ class EmotionalParticleSystem {
         p.vy *= 0.96;
         p.vx *= 0.98;
       } else if (p.tremble !== undefined && p.phase === 'deconstructing') {
-        // Fear - direct gravity with tremble
-        p.vy += p.behavior.gravity;
+        // Fear - REDUCED gravity with tremble
+        p.vy += p.behavior.gravity * 0.4;
         p.vx *= 0.98;
 
         p.tremble -= p.trembleDecay;
@@ -600,19 +615,19 @@ class EmotionalParticleSystem {
             p.vy = 3 + Math.random() * 8;  // Downward instead of up
           }
         } else {
-          // Fall after expanding
-          p.vy += p.behavior.gravity * 0.8;
+          // Fall after expanding - REDUCED gravity
+          p.vy += p.behavior.gravity * 0.3;
           p.vx *= 0.98;
         }
       } else if (p.driftAngle !== undefined) {
-        // Loneliness - drift with gravity
-        p.vy += p.behavior.gravity * 0.7;
+        // Loneliness - drift with REDUCED gravity
+        p.vy += p.behavior.gravity * 0.3;
         p.driftAngle += 0.02;
         p.vx += Math.cos(p.driftAngle) * 0.3;
         p.vx *= 0.98;
       } else if (p.chaos !== undefined && p.phase === 'chaotic') {
-        // Anxiety - full gravity with chaos
-        p.vy += p.behavior.gravity;
+        // Anxiety - REDUCED gravity with chaos
+        p.vy += p.behavior.gravity * 0.4;
         p.vx *= 0.98;
 
         p.chaos -= p.chaosDecay;
@@ -621,8 +636,8 @@ class EmotionalParticleSystem {
           p.vy += (Math.random() - 0.5) * p.chaos * 2;
         }
       } else {
-        // Default - anger, auto, etc. - full gravity, no friction
-        p.vy += p.behavior.gravity;
+        // Default - anger, auto, etc. - REDUCED gravity so explosion dominates
+        p.vy += p.behavior.gravity * 0.3;  // Only 30% gravity initially
         // Minimal air resistance only on x
         p.vx *= 0.995;
       }
@@ -689,7 +704,7 @@ class EmotionalParticleSystem {
     });
 
     this.particles = this.particles.filter(p => {
-      p.vy += p.gravity;
+      p.vy += p.gravity;  // Already reduced in createWaveParticles
       p.vx *= p.friction;
       p.vy *= p.friction;
 
