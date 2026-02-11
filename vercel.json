@@ -1,10 +1,4 @@
 {
-  "rewrites": [
-    {
-      "source": "/((?!app\\.js|styles\\.css|.*\\.(png|jpg|svg|ico|woff|woff2|ttf|eot)).)*",
-      "destination": "/index.html"
-    }
-  ],
   "cleanUrls": true,
   "trailingSlash": false
 }
