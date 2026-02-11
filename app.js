@@ -336,65 +336,65 @@ class EmotionalParticleSystem {
   getEmotionBehavior(emotion) {
     const behaviors = {
       sadness: {
-        decay: 0.003 + Math.random() * 0.002,
+        decay: 0.004 + Math.random() * 0.002,
         wobbleSpeed: 0.01 + Math.random() * 0.01,
-        gravity: 0.3,  // Increased for faster fall
-        friction: 0.98,
-        lift: -0.2,
+        gravity: 1.2,  // Fast fall
+        friction: 1,  // No air resistance
+        lift: 0,
         turbulence: 0.3,
         phase: 'down_then_up'
       },
       anger: {
-        decay: 0.012 + Math.random() * 0.008,
+        decay: 0.015 + Math.random() * 0.01,
         wobbleSpeed: 0.05 + Math.random() * 0.05,
-        gravity: 0.8,  // Much stronger gravity
-        friction: 0.94,
-        lift: 1,  // Less upward lift, more explosive downward
+        gravity: 2,  // Explosive downward
+        friction: 1,  // No air resistance
+        lift: 0,
         turbulence: 3,
         phase: 'explosive'
       },
       anxiety: {
-        decay: 0.006 + Math.random() * 0.004,
+        decay: 0.008 + Math.random() * 0.005,
         wobbleSpeed: 0.08 + Math.random() * 0.08,
-        gravity: 0.4,  // Increased
-        friction: 0.97,
-        lift: -0.3,
+        gravity: 1.5,  // Fast chaotic fall
+        friction: 1,
+        lift: 0,
         turbulence: 2,
         phase: 'chaotic_then_calm'
       },
       fear: {
-        decay: 0.004 + Math.random() * 0.003,
+        decay: 0.005 + Math.random() * 0.003,
         wobbleSpeed: 0.1 + Math.random() * 0.05,
-        gravity: 0.35,  // Increased
-        friction: 0.97,
-        lift: -0.5,
+        gravity: 1.3,
+        friction: 1,
+        lift: 0,
         turbulence: 1.5,
         phase: 'trembling'
       },
       shame: {
-        decay: 0.002 + Math.random() * 0.0015,
+        decay: 0.003 + Math.random() * 0.002,
         wobbleSpeed: 0.005 + Math.random() * 0.005,
-        gravity: 0.15,  // Increased
-        friction: 0.99,
-        lift: -0.05,
+        gravity: 0.8,
+        friction: 1,
+        lift: 0,
         turbulence: 0.2,
         phase: 'shrinking_then_expanding'
       },
       loneliness: {
-        decay: 0.003 + Math.random() * 0.002,
+        decay: 0.004 + Math.random() * 0.002,
         wobbleSpeed: 0.015 + Math.random() * 0.01,
-        gravity: 0.25,  // Increased
-        friction: 0.98,
-        lift: -0.3,
+        gravity: 1,
+        friction: 1,
+        lift: 0,
         turbulence: 0.6,
         phase: 'seeking'
       },
       auto: {
-        decay: 0.004 + Math.random() * 0.003,
+        decay: 0.005 + Math.random() * 0.003,
         wobbleSpeed: 0.02 + Math.random() * 0.02,
-        gravity: 0.1,
-        friction: 0.98,
-        lift: -0.5,
+        gravity: 1,
+        friction: 1,
+        lift: 0,
         turbulence: 0.5,
         phase: 'gentle'
       }
@@ -522,7 +522,7 @@ class EmotionalParticleSystem {
         rotationSpeed: (Math.random() - 0.5) * 15,
         life: 1,
         decay: behavior.decay * decayMod,
-        gravity: behavior.gravity * 0.5,
+        gravity: behavior.gravity,  // Full gravity, no reduction
         friction: behavior.friction,
         wobble: Math.random() * Math.PI * 2,
         wobbleSpeed: behavior.wobbleSpeed,
@@ -566,21 +566,22 @@ class EmotionalParticleSystem {
       }
 
       if (p.phase === 'falling') {
-        p.vy += 0.06;
+        // Direct gravity for falling phase - much faster
+        p.vy += p.behavior.gravity;
         p.fallDuration--;
 
         if (p.fallDuration <= 0) {
           p.phase = 'rising';
-          p.vy = p.behavior.lift;
+          p.vy = -3 - Math.random() * 2;  // Fixed upward velocity
         }
       } else if (p.phase === 'rising') {
-        p.vy *= 0.98;
-        p.vy -= 0.02;
-        p.vx *= 0.99;
+        // Gradual slow down while rising
+        p.vy *= 0.96;
+        p.vx *= 0.98;
       } else if (p.tremble !== undefined && p.phase === 'deconstructing') {
-        p.vx *= 0.99;
-        p.vy *= 0.99;
-        p.vy += p.behavior.gravity * 0.5;
+        // Fear - direct gravity with tremble
+        p.vy += p.behavior.gravity;
+        p.vx *= 0.98;
 
         p.tremble -= p.trembleDecay;
         if (p.tremble > 0) {
@@ -589,28 +590,30 @@ class EmotionalParticleSystem {
         }
       } else if (p.shrinkPhase !== undefined) {
         if (p.shrinkPhase) {
+          // Shame shrink phase - slow down then explode
           p.vx *= 0.95;
           p.vy *= 0.95;
           p.expandTimer--;
           if (p.expandTimer <= 0) {
             p.shrinkPhase = false;
-            p.vx = (Math.random() - 0.5) * 8;
-            p.vy = -2 - Math.random() * 3;
+            p.vx = (Math.random() - 0.5) * 15;
+            p.vy = 3 + Math.random() * 8;  // Downward instead of up
           }
         } else {
-          p.vy *= 0.98;
-          p.vy -= 0.01;
-          p.vx *= 0.99;
+          // Fall after expanding
+          p.vy += p.behavior.gravity * 0.8;
+          p.vx *= 0.98;
         }
       } else if (p.driftAngle !== undefined) {
-        p.vx *= 0.99;
-        p.vy += p.behavior.gravity * 0.3;
+        // Loneliness - drift with gravity
+        p.vy += p.behavior.gravity * 0.7;
         p.driftAngle += 0.02;
-        p.vx += Math.cos(p.driftAngle) * 0.1;
+        p.vx += Math.cos(p.driftAngle) * 0.3;
+        p.vx *= 0.98;
       } else if (p.chaos !== undefined && p.phase === 'chaotic') {
-        p.vx *= 0.99;
-        p.vy *= 0.99;
-        p.vy += p.behavior.gravity * 0.5;
+        // Anxiety - full gravity with chaos
+        p.vy += p.behavior.gravity;
+        p.vx *= 0.98;
 
         p.chaos -= p.chaosDecay;
         if (p.chaos > 0) {
@@ -618,9 +621,10 @@ class EmotionalParticleSystem {
           p.vy += (Math.random() - 0.5) * p.chaos * 2;
         }
       } else {
-        p.vy += p.behavior.gravity * 0.3;
-        p.vx *= p.behavior.friction;
-        p.vy *= p.behavior.friction;
+        // Default - anger, auto, etc. - full gravity, no friction
+        p.vy += p.behavior.gravity;
+        // Minimal air resistance only on x
+        p.vx *= 0.995;
       }
 
       p.x += p.vx;
