@@ -474,8 +474,8 @@ class EmotionalParticleSystem {
     const pixels = imageData.data;
 
     // Sample pixels to create particles
-    // Gap of 4-5 gives good balance of density vs performance
     const gap = 5;
+    let particleCount = 0;
 
     for (let y = 0; y < this.height; y += gap) {
       for (let x = 0; x < this.width; x += gap) {
@@ -484,9 +484,13 @@ class EmotionalParticleSystem {
         if (pixels[index + 3] > 128) {
           // Create particle at this position
           this.particles.push(new Particle(x, y, emotion, palette));
+          particleCount++;
         }
       }
     }
+
+    console.log(`[Particle System] Created ${particleCount} particles from text: "${text}"`);
+    console.log(`[Particle System] Canvas size: ${this.width}x${this.height}, Font size: ${fontSize}px`);
   }
 
   /**
@@ -506,6 +510,11 @@ class EmotionalParticleSystem {
   update() {
     // Clear canvas
     this.ctx.clearRect(0, 0, this.width, this.height);
+
+    // Debug: log frame
+    if (this.particles.length > 0 && Math.random() < 0.02) {
+      console.log(`[Particle System] Drawing ${this.particles.length} particles`);
+    }
 
     // Update and draw particles
     this.particles = this.particles.filter(p => {
@@ -527,6 +536,7 @@ class EmotionalParticleSystem {
    * Start animation loop
    */
   start() {
+    console.log('[Particle System] Starting animation loop');
     this.isRunning = true;
     const animate = () => {
       if (!this.isRunning) return;
@@ -534,6 +544,7 @@ class EmotionalParticleSystem {
       if (hasParticles) {
         requestAnimationFrame(animate);
       } else {
+        console.log('[Particle System] Animation loop ended - no particles');
         this.isRunning = false;
       }
     };
