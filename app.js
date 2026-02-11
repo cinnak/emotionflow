@@ -3,6 +3,9 @@
 // Based on psychological research for true catharsis
 // ============================================
 
+// DEBUG: Log immediately when app.js loads
+console.log('[EmotionFlow] app.js loaded successfully!');
+
 // ============================================
 // Color Palettes - Emotional Journeys
 // ============================================
@@ -422,8 +425,11 @@ class Particle {
  */
 class EmotionalParticleSystem {
   constructor(canvas) {
+    console.log('[EmotionalParticleSystem] Constructor called with canvas:', canvas);
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d', { alpha: true });
+    console.log('[EmotionalParticleSystem] Canvas context:', this.ctx);
+    console.log('[EmotionalParticleSystem] Canvas size:', canvas.width, 'x', canvas.height);
     this.particles = [];
     this.isRunning = false;
     this.width = 0;
@@ -906,6 +912,8 @@ class EmotionalAudioEngine {
 // ============================================
 class SadnessConfetti {
   constructor() {
+    console.log('[EmotionFlow] SadnessConfetti constructor called');
+
     // Elements
     this.body = document.body;
     this.emotionInput = document.getElementById('emotionInput');
@@ -950,7 +958,9 @@ class SadnessConfetti {
     this.reduceMotion = false;
 
     // Systems
+    console.log('[EmotionFlow] Creating particle system...');
     this.particles = new EmotionalParticleSystem(this.canvas);
+    console.log('[EmotionFlow] Particle system created:', this.particles);
     this.audio = new EmotionalAudioEngine();
 
     // Bind events
