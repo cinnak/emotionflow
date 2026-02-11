@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Particle Test</title>
+  <style>
+    body { margin: 0; background: #0d1219; min-height: 100vh; }
+    canvas { display: block; }
+    #info { color: white; font-family: monospace; padding: 20px; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="info">
+    <h2>Particle System Test</h2>
+    <button onclick="testParticles()">Test Explosion</button>
+    <p id="status">Click button to test</p>
+  </div>
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    function testParticles() {
+      document.getElementById('status').textContent = 'Creating particles...';
+      console.log('Test started');
+
+      const particles = [];
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+
+      // Create particles in a circle
+      for (let i = 0; i < 500; i++) {
+        const angle = (i / 500) * Math.PI * 2;
+        const radius = 100;
+        particles.push({
+          x: centerX + Math.cos(angle) * radius,
+          y: centerY + Math.sin(angle) * radius,
+          vx: Math.cos(angle) * 15,
+          vy: Math.sin(angle) * 15,
+          size: 5,
+          color: `hsl(${Math.random() * 60 + 10}, 80%, 60%)`,
+          life: 1
+        });
+      }
+
+      document.getElementById('status').textContent = `Created ${particles.length} particles - animating...`;
+
+      function animate() {
+        ctx.fillStyle = 'rgba(13, 18, 25, 0.2)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        let alive = false;
+        particles.forEach(p => {
+          if (p.life > 0) {
+            alive = true;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.2; // gravity
+            p.life -= 0.01;
+
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.life;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+
+        ctx.globalAlpha = 1;
+        if (alive) {
+          requestAnimationFrame(animate);
+        } else {
+          document.getElementById('status').textContent = 'Animation complete';
+        }
+      }
+
+      animate();
+    }
+  </script>
+</body>
+</html>

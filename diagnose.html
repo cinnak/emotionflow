@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Diagnose Particle Issue</title>
+  <style>
+    body { margin: 0; background: #0d1219; min-height: 100vh; overflow: hidden; font-family: monospace; }
+    #particleCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 300; pointer-events: none; }
+    #info { position: fixed; top: 10px; left: 10px; right: 10px; color: white; z-index: 400; background: rgba(0,0,0,0.7); padding: 15px; max-height: 80vh; overflow-y: auto; font-size: 12px; }
+    button { padding: 8px 16px; font-size: 14px; cursor: pointer; background: #f0805a; color: white; border: none; border-radius: 4px; margin: 5px; }
+    .log { color: #0f0; margin: 2px 0; }
+    .error { color: #f00; }
+    .warn { color: #ff0; }
+  </style>
+</head>
+<body>
+  <div id="info">
+    <h3>Particle System Diagnosis</h3>
+    <button onclick="runAllTests()">Run All Tests</button>
+    <div id="log"></div>
+  </div>
+  <canvas id="particleCanvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    const logDiv = document.getElementById('log');
+
+    function log(msg, type = 'log') {
+      console.log(msg);
+      const div = document.createElement('div');
+      div.className = type;
+      div.textContent = msg;
+      logDiv.appendChild(div);
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      log('Canvas size: ' + canvas.width + 'x' + canvas.height);
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Copy from app.js
+    const PALETTE = {
+      peak: '#f0805a',
+      journey: ['#6c2a2a', '#a03030', '#c04040', '#f0805a', '#ffb080', '#ffdcc7']
+    };
+
+    class Particle {
+      constructor(x, y, emotion, palette) {
+        this.x = x;
+        this.y = y;
+        this.originX = x;
+        this.originY = y;
+        this.emotion = emotion;
+        this.palette = palette;
+        this.vx = 0;
+        this.vy = 0;
+        this.gravity = 0.15;
+        this.friction = 0.99;
+        this.size = 4 + Math.random() * 3;
+        this.baseSize = this.size;
+        this.life = 1.0;
+        this.decay = 0.003 + Math.random() * 0.003;
+        this.color = palette.peak;
+        this.colorIndex = 0;
+        this.journey = palette.journey;
+        this.phase = 'holding';
+        this.delay = Math.random() * 500;
+      }
+
+      explode() {
+        this.phase = 'exploding';
+        const power = 12 + Math.random() * 20;
+        const angle = Math.random() * Math.PI * 2;
+        this.vx = Math.cos(angle) * power;
+        this.vy = Math.sin(angle) * power - 3;
+        this.decay = 0.012 + Math.random() * 0.008;
+      }
+
+      update() {
+        if (this.phase === 'holding') {
+          this.delay -= 16;
+          if (this.delay <= 0) {
+            this.explode();
+          }
+          return true;
+        }
+
+        if (this.phase === 'exploding') {
+          this.vy += this.gravity;
+          this.vx *= this.friction;
+          this.x += this.vx;
+          this.y += this.vy;
+          this.life -= this.decay;
+        }
+
+        const progress = 1 - this.life;
+        this.colorIndex = Math.floor(progress * (this.journey.length - 1));
+        this.colorIndex = Math.min(this.colorIndex, this.journey.length - 1);
+
+        return this.life > 0;
+      }
+
+      draw(ctx) {
+        ctx.fillStyle = this.journey[this.colorIndex];
+        ctx.globalAlpha = this.life;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function runAllTests() {
+      logDiv.innerHTML = '';
+      log('=== Starting Diagnosis ===');
+      test1();
+    }
+
+    function test1() {
+      log('\n--- Test 1: Direct Canvas Drawing ---');
+      ctx.fillStyle = '#f0805a';
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.arc(canvas.width / 2, canvas.height / 2, 20, 0, Math.PI * 2);
+      ctx.fill();
+      log('Drew a circle at center. Can you see it?');
+
+      setTimeout(test2, 1000);
+    }
+
+    function test2() {
+      log('\n--- Test 2: Particle Creation ---');
+      const p = new Particle(canvas.width / 2, canvas.height / 2, 'anger', PALETTE);
+      log('Particle created:');
+      log('  x=' + p.x + ', y=' + p.y + ', size=' + p.size.toFixed(2));
+      log('  phase=' + p.phase + ', life=' + p.life + ', colorIndex=' + p.colorIndex);
+      log('  journey=' + JSON.stringify(p.journey));
+      log('  journey[0]=' + p.journey[0]);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      p.draw(ctx);
+      log('Drew particle. Can you see it?');
+
+      setTimeout(test3, 1000);
+    }
+
+    function test3() {
+      log('\n--- Test 3: Holding Phase Particle ---');
+      const particles = [];
+      for (let i = 0; i < 10; i++) {
+        const p = new Particle(
+          canvas.width / 2 + (Math.random() - 0.5) * 100,
+          canvas.height / 2 + (Math.random() - 0.5) * 100,
+          'anger',
+          PALETTE
+        );
+        particles.push(p);
+      }
+      log('Created ' + particles.length + ' particles in holding phase');
+
+      let frames = 0;
+      function animate() {
+        frames++;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        let drawn = 0;
+        particles.forEach(p => {
+          if (p.update()) {
+            if (p.life > 0) {
+              p.draw(ctx);
+              drawn++;
+            }
+          }
+        });
+
+        ctx.globalAlpha = 1;
+
+        if (frames % 30 === 0) {
+          log('Frame ' + frames + ': ' + drawn + ' particles drawn');
+        }
+
+        if (frames < 120) {
+          requestAnimationFrame(animate);
+        } else {
+          log('Holding phase test complete. Did you see particles?');
+          setTimeout(test4, 500);
+        }
+      }
+      animate();
+    }
+
+    function test4() {
+      log('\n--- Test 4: Text Particles (App Simulation) ---');
+      const text = 'HI';
+      const particles = [];
+
+      const offCanvas = document.createElement('canvas');
+      const offCtx = offCanvas.getContext('2d');
+      offCanvas.width = canvas.width;
+      offCanvas.height = canvas.height;
+
+      const fontSize = 100;
+      offCtx.font = '600 ' + fontSize + 'px Arial';
+      offCtx.fillStyle = '#ffffff';
+      offCtx.textAlign = 'center';
+      offCtx.textBaseline = 'middle';
+      offCtx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+      const imageData = offCtx.getImageData(0, 0, canvas.width, canvas.height);
+      const pixels = imageData.data;
+      const gap = 6;
+
+      let count = 0;
+      for (let y = 0; y < canvas.height; y += gap) {
+        for (let x = 0; x < canvas.width; x += gap) {
+          const index = (y * canvas.width + x) * 4;
+          if (pixels[index + 3] > 128) {
+            const p = new Particle(x, y, 'anger', PALETTE);
+            p.phase = 'holding';
+            p.delay = 0; // Explode immediately
+            particles.push(p);
+            count++;
+          }
+        }
+      }
+
+      log('Created ' + count + ' particles from text "' + text + '"');
+
+      let frames = 0;
+      function animate() {
+        frames++;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        let drawn = 0;
+        particles.forEach(p => {
+          if (p.update()) {
+            if (p.life > 0) {
+              p.draw(ctx);
+              drawn++;
+            }
+          }
+        });
+
+        ctx.globalAlpha = 1;
+
+        if (frames % 30 === 0) {
+          log('Frame ' + frames + ': ' + drawn + ' particles drawn');
+        }
+
+        if (drawn > 0) {
+          requestAnimationFrame(animate);
+        } else {
+          log('Text particles test complete.');
+        }
+      }
+      animate();
+    }
+
+    log('Diagnosis tool loaded. Click "Run All Tests" to begin.');
+    log('Canvas: ' + canvas.width + 'x' + canvas.height + ', z-index: 300');
+  </script>
+</body>
+</html>

@@ -7,7 +7,18 @@
       "Bash(git push)",
       "Bash(node -c:*)",
       "Bash(echo:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(python:*)",
+      "Bash(npx playwright install:*)",
+      "Bash(node:*)",
+      "Bash(ren:*)",
+      "Bash(where:*)",
+      "Bash(findstr:*)",
+      "Bash(dir:*)",
+      "Bash(timeout:*)",
+      "Bash(curl:*)",
+      "Bash(cmd /c \"start cmd /k cd /d D:\\\\show_me_your_code\\\\pythonProject\\\\claudecode\\\\emotionflow && python -m http.server 8080\")",
+      "Bash(cmd /c \"start cmd /k cd /d D:\\\\show_me_your_code\\\\pythonProject\\\\claudecode\\\\emotionflow && py -m http.server 8080\")"
     ]
   }
 }

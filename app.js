@@ -470,6 +470,11 @@ class EmotionalParticleSystem {
   createTextParticles(text, emotion) {
     this.particles = [];
 
+    // Ensure canvas has valid size
+    if (this.width === 0 || this.height === 0) {
+      this.resize();
+    }
+
     console.log('[Particle System] createTextParticles called, canvas size:', this.width, 'x', this.height);
 
     // Get color palette
@@ -493,6 +498,8 @@ class EmotionalParticleSystem {
     offCtx.textBaseline = 'middle';
     offCtx.fillText(text, this.width / 2, this.height / 2);
 
+    console.log('[Particle System] Text rendered at:', this.width / 2, this.height / 2, 'font size:', fontSize);
+
     // Get pixel data
     const imageData = offCtx.getImageData(0, 0, this.width, this.height);
     const pixels = imageData.data;
@@ -500,6 +507,7 @@ class EmotionalParticleSystem {
     // Sample pixels to create particles
     const gap = 5;
     let particleCount = 0;
+    let minX = this.width, maxX = 0, minY = this.height, maxY = 0;
 
     for (let y = 0; y < this.height; y += gap) {
       for (let x = 0; x < this.width; x += gap) {
@@ -510,6 +518,11 @@ class EmotionalParticleSystem {
           const p = new Particle(x, y, emotion, palette);
           this.particles.push(p);
           particleCount++;
+          // Track bounds
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
           // Log first particle
           if (particleCount === 1) {
             console.log('[Particle System] First particle at:', x, y, 'size:', p.size, 'color:', p.journey[0]);
@@ -520,6 +533,7 @@ class EmotionalParticleSystem {
 
     console.log(`[Particle System] Created ${particleCount} particles from text: "${text}"`);
     console.log(`[Particle System] Canvas size: ${this.width}x${this.height}, Font size: ${fontSize}px`);
+    console.log(`[Particle System] Particle bounds: x[${minX}-${maxX}], y[${minY}-${maxY}]`);
 
     // Verify particles array
     if (this.particles.length > 0) {
@@ -533,6 +547,8 @@ class EmotionalParticleSystem {
         journey: sample.journey,
         phase: sample.phase
       });
+    } else {
+      console.error('[Particle System] WARNING: No particles created!');
     }
   }
 
