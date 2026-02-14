@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="A digital ceremony for emotional release. Feel it fully, let it go completely.">
   <meta name="theme-color" content="#0d1219">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; img-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data: blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <title>EmotionFlow | Emotional Release</title>
-  <link rel="stylesheet" href="styles.css?v=10">
+  <link rel="stylesheet" href="styles.css?v=38">
 </head>
+
 <body data-emotion="sadness">
   <!-- Screen Reader Announcements -->
   <div aria-live="polite" aria-atomic="true" id="a11yAnnouncer" class="sr-only"></div>
@@ -22,9 +25,6 @@
     <div class="gradient-orb orb-2"></div>
     <div class="gradient-orb orb-3"></div>
   </div>
-
-  <!-- Particle Canvas -->
-  <canvas id="particleCanvas" aria-label="Particle effects animation"></canvas>
 
   <!-- Exhale Indicator (Closure Animation) -->
   <div class="exhale-indicator" id="exhaleIndicator" aria-hidden="true"></div>
@@ -75,16 +75,11 @@
     <!-- Input Section -->
     <section class="input-section" id="inputSection">
       <div class="emotion-well">
-        <textarea
-          id="emotionInput"
-          class="emotion-input"
-          placeholder="What do you need to let go of?
+        <textarea id="emotionInput" class="emotion-input" placeholder="What do you need to let go of?
 
 Pour it out here. Let yourself feel it fully.
-Then hold the button or press Space to build your release."
-          maxlength="1000"
-          aria-label="Write your emotions here"
-        ></textarea>
+Then hold the button or press Space to build your release." maxlength="1000"
+          aria-label="Write your emotions here"></textarea>
         <div class="well-border top"></div>
         <div class="well-border right"></div>
         <div class="well-border bottom"></div>
@@ -137,18 +132,18 @@ Then hold the button or press Space to build your release."
           <svg class="sun-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <!-- Sun rays -->
             <g class="sun-rays">
-              <line x1="50" y1="10" x2="50" y2="25" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-              <line x1="50" y1="75" x2="50" y2="90" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-              <line x1="10" y1="50" x2="25" y2="50" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-              <line x1="75" y1="50" x2="90" y2="50" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-              <line x1="22" y1="22" x2="33" y2="33" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-              <line x1="67" y1="67" x2="78" y2="78" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-              <line x1="22" y1="78" x2="33" y2="67" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-              <line x1="67" y1="33" x2="78" y2="22" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+              <line x1="50" y1="10" x2="50" y2="25" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+              <line x1="50" y1="75" x2="50" y2="90" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+              <line x1="10" y1="50" x2="25" y2="50" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+              <line x1="75" y1="50" x2="90" y2="50" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+              <line x1="22" y1="22" x2="33" y2="33" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+              <line x1="67" y1="67" x2="78" y2="78" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+              <line x1="22" y1="78" x2="33" y2="67" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+              <line x1="67" y1="33" x2="78" y2="22" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
             </g>
             <!-- Sun circle -->
-            <circle class="sun-circle" cx="50" cy="50" r="20" fill="currentColor" opacity="0.3"/>
-            <circle cx="50" cy="50" r="14" fill="currentColor"/>
+            <circle class="sun-circle" cx="50" cy="50" r="20" fill="currentColor" opacity="0.3" />
+            <circle cx="50" cy="50" r="14" fill="currentColor" />
           </svg>
         </div>
         <p class="afterglow-message" id="afterglowMessage"></p>
@@ -156,11 +151,19 @@ Then hold the button or press Space to build your release."
         <button id="resetBtn" class="reset-btn">
           <span>Release Another</span>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
           </svg>
         </button>
 
-        <!-- Milestone Footer - Small, unobtrusive -->
+        <button id="shareBtn" class="share-btn" aria-label="Share your release">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M4 8l4-5 4 5M8 3v9M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+          <span>Share Release</span>
+        </button>
+
+        <!-- Milestone Footer -->
         <p class="milestone-footer" id="milestoneFooter" hidden></p>
 
         <!-- Crisis Support Resources -->
@@ -168,8 +171,10 @@ Then hold the button or press Space to build your release."
           <p class="crisis-text">Need additional support?</p>
           <div class="crisis-links">
             <a href="tel:988" class="crisis-link">🇺🇸 Crisis Line: 988</a>
-            <a href="https://findahelpline.com" target="_blank" rel="noopener" class="crisis-link">🌍 International Resources</a>
-            <a href="https://www.mentalhealth.gov/get-help/immediate-help" target="_blank" rel="noopener" class="crisis-link">📚 Mental Health Resources</a>
+            <a href="https://findahelpline.com" target="_blank" rel="noopener" class="crisis-link">🌍 International
+              Resources</a>
+            <a href="https://www.mentalhealth.gov/get-help/immediate-help" target="_blank" rel="noopener"
+              class="crisis-link">📚 Mental Health Resources</a>
           </div>
         </div>
       </div>
@@ -182,7 +187,16 @@ Then hold the button or press Space to build your release."
         <span class="counter-icon">🎯</span>
         <span class="counter-text">You've released <strong id="totalReleases">0</strong> emotions</span>
       </p>
-      <p class="keyboard-hint"><kbd>?</kbd> for keyboard shortcuts</p>
+      <button id="historyToggle" class="history-toggle-btn" aria-label="View release history">
+        <span>📊</span> <span>History</span>
+      </button>
+      <p class="keyboard-hint"><kbd>?</kbd> for shortcuts</p>
+      <div class="legal-links">
+        <a href="privacy.html">Privacy</a>
+        <span class="legal-divider">·</span>
+        <a href="terms.html">Terms</a>
+      </div>
+      <p class="medical-disclaimer">This app is not a substitute for professional mental health care.</p>
     </footer>
   </main>
 
@@ -211,7 +225,117 @@ Then hold the button or press Space to build your release."
     <span class="motion-icon">🌊</span>
   </button>
 
+  <!-- History Overlay -->
+  <div id="historyOverlay" class="history-overlay"></div>
+
+  <!-- Release History Panel -->
+  <aside id="historyPanel" class="history-panel">
+    <div class="history-header">
+      <h2>Release History</h2>
+      <button id="historyClose" class="history-close" aria-label="Close history">✕</button>
+    </div>
+    <div class="history-stats" id="historyStats"></div>
+    <div class="history-entries" id="historyEntries">
+      <p class="history-empty">No releases yet. Your journey begins here.</p>
+    </div>
+    <button id="clearHistory" class="clear-history-btn">Clear History</button>
+  </aside>
+
+  <!-- Share Modal -->
+  <dialog id="shareModal" class="share-modal">
+    <div class="share-content">
+      <div class="share-header">
+        <h2>Share Release</h2>
+        <button id="closeShareModal" class="close-modal" aria-label="Close share">✕</button>
+      </div>
+
+      <div class="share-preview-container">
+        <canvas id="sharePreviewCanvas" class="share-preview-canvas"></canvas>
+        <div class="share-loading">Generating image...</div>
+      </div>
+
+      <div class="share-options">
+        <!-- Row 1: Global Social -->
+        <button class="share-option-btn twitter" data-platform="twitter" aria-label="Share on X (Twitter)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+          </svg>
+          <span>Post</span>
+        </button>
+        <button class="share-option-btn facebook" data-platform="facebook" aria-label="Share on Facebook">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 2.848-5.978 5.817-5.978.3 0 .56.015.823.043v3.072h-1.777c-1.103 0-1.74.969-1.74 2.25v2.192h4.292l-.568 3.667h-3.724v7.98h-3.123z" />
+          </svg>
+          <span>Facebook</span>
+        </button>
+        <button class="share-option-btn whatsapp" data-platform="whatsapp" aria-label="Share on WhatsApp">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+          </svg>
+          <span>WhatsApp</span>
+        </button>
+
+        <!-- Row 2: Direct Share (Asia) -->
+        <button class="share-option-btn telegram" data-platform="telegram" aria-label="Share on Telegram">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.4-1.08.39-.35-.01-1.03-.2-1.54-.35-.62-.18-1.12-.28-1.04-.6.04-.15.35-.31.96-.48 3.78-1.63 6.31-2.7 7.59-3.21 3.61-1.42 4.36-1.66 4.85-1.67.11 0 .35.03.5.15.15.13.19.31.21.43-.02.05-.01.12 0 .28z" />
+          </svg>
+          <span>Telegram</span>
+        </button>
+        <button class="share-option-btn weibo" data-platform="weibo" aria-label="Share on Weibo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" />
+          </svg>
+          <span>Weibo</span>
+        </button>
+        <button class="share-option-btn qq" data-platform="qq" aria-label="Share on QQ">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z" />
+          </svg>
+          <span>QQ</span>
+        </button>
+
+        <!-- Row 3: Copy Fallback -->
+        <button class="share-option-btn wechat" data-platform="wechat" aria-label="Share on WeChat">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M7 10h2v2H7zm4 0h2v2h-2zm-5-5h12v12H6V5z" />
+          </svg>
+          <span>WeChat</span>
+        </button>
+        <button class="share-option-btn xiaohongshu" data-platform="xiaohongshu" aria-label="Share on Xiaohongshu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V8h2v4z" />
+          </svg>
+          <span>RedBook</span>
+        </button>
+        <button class="share-option-btn discord" data-platform="discord" aria-label="Share on Discord">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09.01-.02-.01-.07-.07-.07-1.5.26-2.93.71-4.27 1.33-.01 0-.02.01-.03.02-2.72 4.07-3.47 8.03-3.1 11.95 0 .02.01.05.03.06 1.61 1.18 3.16 1.9 4.69 1.91.04 0 .07-.02.09-.05.36-.5.68-1.04.95-1.61.02-.04 0-.09-.04-1.12l-.02-.06c-.66-.25-1.28-.56-1.87-.92-.04-.02-.04-.07 0-.1.13-.1.25-.2.37-.31.02-.02.05-.02.07-.01 3.58 1.66 7.48 1.66 11.02 0 .02-.01.05 0 .07.01.13.11.26.22.4.33.04.04.03.08-.01.1-1.58.98-3.23 1.54-4.94 1.91-.04.03-.04.08-.02.12.27.57.6 1.11.97 1.62.02.03.05.05.09.05 1.51-.01 3.07-.73 4.68-1.91.02-.01.03-.04.03-.06.45-5.06-1.5-9.16-4.59-13.13-.01-.01-.02-.02-.03-.02z" />
+          </svg>
+          <span>Discord</span>
+        </button>
+      </div>
+
+      <div class="share-actions">
+        <button id="downloadShareBtn" class="action-btn secondary">
+          <span>⬇️ Download Image</span>
+        </button>
+        <button id="copyShareBtn" class="action-btn secondary">
+          <span>📋 Copy Image</span>
+        </button>
+      </div>
+    </div>
+  </dialog>
+
   <!-- Version Update -->
-  <script type="module" src="app.js?v=26"></script>
+  <script type="module" src="app.js?v=38"></script>
 </body>
+
 </html>

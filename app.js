@@ -3,8 +3,25 @@
 // Based on psychological research for true catharsis
 // ============================================
 
-// DEBUG: Log immediately when app.js loads
-console.log('[EmotionFlow] app.js loaded successfully!');
+// Debug mode — set to true for verbose particle/canvas logging
+const DEBUG = true;
+function debugLog(...args) {
+  if (DEBUG) {
+    console.log(...args);
+    let consoleDiv = document.getElementById('debug-console');
+    if (!consoleDiv) {
+      consoleDiv = document.createElement('div');
+      consoleDiv.id = 'debug-console';
+      document.body.appendChild(consoleDiv);
+    }
+    const msg = document.createElement('div');
+    msg.textContent = args.map(a => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' ');
+    consoleDiv.appendChild(msg);
+    consoleDiv.scrollTop = consoleDiv.scrollHeight;
+  }
+}
+
+debugLog('[EmotionFlow] app.js loaded successfully!');
 
 // ============================================
 // Color Palettes - Emotional Journeys
@@ -221,7 +238,7 @@ const EmotionEngine = {
  * Simple ES6 class with clear physics
  */
 class Particle {
-  constructor(x, y, emotion, palette) {
+  constructor(x, y, emotion, palette, type = 'text') {
     this.x = x;
     this.y = y;
     this.originX = x;
@@ -231,101 +248,130 @@ class Particle {
 
     // Physics properties
     this.vx = 0;
+    this.type = type; // 'text' or 'rain'
+
+    // Physics
+    this.vx = 0;
     this.vy = 0;
-    this.gravity = 0.15;
-    this.friction = 0.99;
+    this.friction = 0.96;
+    this.gravity = 0.1;
 
-    // Visual properties
-    this.size = 4 + Math.random() * 3;  // 4-7px for better visibility
-    this.baseSize = this.size;
+    // Lifecycle
     this.life = 1.0;
-    this.decay = 0.003 + Math.random() * 0.003;
-    this.color = palette.peak;
-    // Start from middle of journey for better visibility
-    this.colorIndex = 3;
-    this.journey = palette.journey;
+    this.decay = Math.random() * 0.01 + 0.005;
+    this.delay = Math.random() * 100; // ms delay before moving (for text)
 
-    // State
-    this.phase = 'holding'; // holding, exploding, fading
-    this.delay = Math.random() * 500; // Staggered explosion
+    // Appearance
+    // Map life 1.0 -> 0.0 to palette colors
+    this.journey = palette.journey;
+    this.colorIndex = 0;
+
+    // Phase: for text particles
+    this.phase = type === 'text' ? 'holding' : 'raining';
+
+    if (type === 'rain') {
+      this.initRainPhysics();
+    } else {
+      this.initTextPhysics();
+    }
   }
 
-  /**
-   * Trigger explosion with emotion-specific velocity
-   */
+  initTextPhysics() {
+    this.vx = 0;
+    this.vy = 0;
+    // Specific behaviors based on emotion
+    if (this.emotion === 'anxiety') {
+      this.chaosAmount = 2.5;
+    } else if (this.emotion === 'fear') {
+      this.trembleAmount = 1.5;
+    }
+  }
+
+  initRainPhysics() {
+    this.life = 1.0 + Math.random() * 0.5; // Last longer
+    this.decay = 0.002 + Math.random() * 0.003;
+    this.y = -Math.random() * window.innerHeight * 0.5; // Start above screen
+    this.x = Math.random() * window.innerWidth;
+
+    switch (this.emotion) {
+      case 'anger': // Heavy storm
+        this.vx = (Math.random() - 0.5) * 4;
+        this.vy = 15 + Math.random() * 10;
+        this.gravity = 0.5;
+        this.size = Math.random() * 3 + 2;
+        break;
+      case 'anxiety': // Chaotic swirling
+        this.vx = (Math.random() - 0.5) * 10;
+        this.vy = 8 + Math.random() * 5;
+        this.gravity = 0.2;
+        break;
+      case 'sadness': // Slow heavy rain
+        this.vx = 0;
+        this.vy = 5 + Math.random() * 5;
+        this.gravity = 0.1;
+        break;
+      default: // Peace/Auto - Glittering
+        this.vx = (Math.random() - 0.5) * 2;
+        this.vy = 3 + Math.random() * 4;
+        this.gravity = 0.05;
+    }
+  }
+
   explode() {
     this.phase = 'exploding';
 
+    // VIOLENT EXPLOSION UPGRADE
+    // Much higher base velocity for shattering effect
+    const explosionForce = 15 + Math.random() * 20;
+    const angle = Math.random() * Math.PI * 2;
+
+    this.vx = Math.cos(angle) * explosionForce;
+    this.vy = Math.sin(angle) * explosionForce;
+
+    // Specific emotion overrides for explosion style
     switch (this.emotion) {
       case 'anger':
-        // Violent explosion in ALL directions
-        const angerPower = 12 + Math.random() * 20;
-        const angerAngle = Math.random() * Math.PI * 2;
-        this.vx = Math.cos(angerAngle) * angerPower;
-        this.vy = Math.sin(angerAngle) * angerPower - 3; // Slight upward bias
-        this.decay = 0.012 + Math.random() * 0.008;
+        // Explosive outward burst
+        this.vx *= 1.5;
+        this.vy *= 1.5;
+        this.friction = 0.94; // Slow down faster
         break;
-
       case 'sadness':
-        // Fall down, then float up
-        this.vx = (Math.random() - 0.5) * 8;
-        this.vy = 2 + Math.random() * 4; // Start falling
-        this.gravity = 0.2;
-        this.fallTime = 30 + Math.random() * 30;
-        this.phase = 'sadness_falling';
-        this.decay = 0.004 + Math.random() * 0.002;
+        // Heavy drop
+        this.vx *= 0.3; // Less horizontal
+        this.vy = Math.abs(this.vy) + 5; // Force down
+        this.gravity = 0.5;
         break;
-
       case 'anxiety':
-        // Chaotic scatter
-        this.vx = (Math.random() - 0.5) * 20;
-        this.vy = (Math.random() - 0.5) * 15;
-        this.gravity = 0.12;
-        this.chaosAmount = 2;
-        this.decay = 0.008 + Math.random() * 0.005;
+        // Jittery scatter
+        this.vx = (Math.random() - 0.5) * 30;
+        this.vy = (Math.random() - 0.5) * 30;
+        this.friction = 0.90;
         break;
-
-      case 'fear':
-        // Trembling movement
-        this.vx = (Math.random() - 0.5) * 10;
-        this.vy = (Math.random() - 0.5) * 8;
-        this.gravity = 0.1;
-        this.trembleAmount = 1.5;
-        this.decay = 0.005 + Math.random() * 0.003;
-        break;
-
-      case 'shame':
-        // Shrink then expand
-        this.vx = (Math.random() - 0.5) * 5;
-        this.vy = 1 + Math.random() * 3;
-        this.gravity = 0.08;
-        this.shrinking = true;
-        this.shrinkTime = 20 + Math.random() * 20;
-        this.decay = 0.003 + Math.random() * 0.002;
-        break;
-
-      case 'loneliness':
-        // Drift seeking
-        this.vx = (Math.random() - 0.5) * 6;
-        this.vy = (Math.random() - 0.5) * 5;
-        this.gravity = 0.1;
-        this.driftAngle = Math.random() * Math.PI * 2;
-        this.decay = 0.004 + Math.random() * 0.002;
-        break;
-
-      default: // auto
-        // Gentle explosion
-        const autoPower = 6 + Math.random() * 10;
-        const autoAngle = Math.random() * Math.PI * 2;
-        this.vx = Math.cos(autoAngle) * autoPower;
-        this.vy = Math.sin(autoAngle) * autoPower - 2;
-        this.gravity = 0.12;
-        this.decay = 0.005 + Math.random() * 0.003;
     }
   }
 
   update() {
-    // Handle delay before explosion
+    if (this.type === 'rain') {
+      this.x += this.vx;
+      this.y += this.vy;
+      this.vy += this.gravity;
+
+      // Anxiety rain swirls
+      if (this.emotion === 'anxiety') {
+        this.vx += (Math.random() - 0.5) * 2;
+      }
+
+      this.life -= this.decay;
+
+      // Kill if off bottom
+      if (this.y > window.innerHeight + 100) {
+        this.life = 0;
+      }
+      return this.life > 0;
+    }
+
+    // Text Particle Logic
     if (this.phase === 'holding') {
       this.delay -= 16;
       if (this.delay <= 0) {
@@ -334,75 +380,19 @@ class Particle {
       return true;
     }
 
-    // Emotion-specific behavior
-    switch (this.phase) {
-      case 'sadness_falling':
-        this.vy += this.gravity;
-        this.vx *= this.friction;
-        this.fallTime--;
-        if (this.fallTime <= 0) {
-          this.phase = 'sadness_rising';
-          this.vy = -2 - Math.random() * 2; // Float up
-        }
-        break;
+    // Standard physics for exploding text
+    this.vx *= this.friction;
+    this.vy *= this.friction;
+    this.vy += this.gravity;
 
-      case 'sadness_rising':
-        this.vy *= 0.97;
-        this.vx *= 0.98;
-        this.gravity = 0; // No gravity when rising
-        break;
-
-      case 'exploding':
-        // Default physics
-        if (this.chaosAmount) {
-          // Anxiety chaos
-          this.vy += this.gravity;
-          this.vx *= this.friction;
-          this.vx += (Math.random() - 0.5) * this.chaosAmount;
-          this.vy += (Math.random() - 0.5) * this.chaosAmount;
-          this.chaosAmount *= 0.98;
-        } else if (this.trembleAmount) {
-          // Fear tremble
-          this.vy += this.gravity;
-          this.vx *= this.friction;
-          this.vx += (Math.random() - 0.5) * this.trembleAmount;
-          this.vy += (Math.random() - 0.5) * this.trembleAmount;
-          this.trembleAmount *= 0.97;
-        } else if (this.shrinking !== undefined) {
-          // Shame
-          if (this.shrinking) {
-            this.size *= 0.97;
-            this.vx *= 0.95;
-            this.vy *= 0.95;
-            this.shrinkTime--;
-            if (this.shrinkTime <= 0) {
-              this.shrinking = false;
-              this.vx = (Math.random() - 0.5) * 8;
-              this.vy = 2 + Math.random() * 4;
-            }
-          } else {
-            this.vy += this.gravity;
-            this.vx *= 0.98;
-          }
-        } else if (this.driftAngle !== undefined) {
-          // Loneliness
-          this.vy += this.gravity;
-          this.driftAngle += 0.02;
-          this.vx += Math.cos(this.driftAngle) * 0.2;
-          this.vx *= 0.99;
-        } else {
-          // Default (anger, auto)
-          this.vy += this.gravity;
-          this.vx *= this.friction;
-        }
-        break;
+    // Add chaos/tremble for holding? No, only after explosion or if implemented
+    if (this.phase === 'exploding' && this.emotion === 'anxiety') {
+      this.vx += (Math.random() - 0.5) * 2; // Post-explosion jitter
     }
 
-    // Apply velocity
     this.x += this.vx;
     this.y += this.vy;
 
-    // Update color through journey
     this.life -= this.decay;
     const progress = 1 - this.life;
     this.colorIndex = Math.floor(progress * (this.journey.length - 1));
@@ -412,21 +402,25 @@ class Particle {
   }
 
   draw(ctx) {
-    // Validate context
-    if (!ctx) {
-      console.error('[Particle] draw() called with null context!');
-      return;
+    if (!ctx) return;
+
+    if (this.type === 'rain') {
+      ctx.fillStyle = this.palette.primary; // Rain usually one color
+      if (this.emotion === 'auto') ctx.fillStyle = '#ffffff';
+    } else {
+      ctx.fillStyle = this.journey[this.colorIndex];
     }
-    ctx.fillStyle = this.journey[this.colorIndex];
-    ctx.globalAlpha = this.life;
+
+    ctx.globalAlpha = Math.max(0, this.life);
+
     ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fill();
-    // Debug: log first draw call
-    if (this._firstDraw === undefined) {
-      this._firstDraw = true;
-      console.log('[Particle] First draw at:', this.x, this.y, 'size:', this.size.toFixed(2), 'color:', this.journey[this.colorIndex], 'alpha:', this.life.toFixed(3));
+    // Rain looks like streaks for anger/sadness
+    if (this.type === 'rain' && (this.emotion === 'anger' || this.emotion === 'sadness')) {
+      ctx.ellipse(this.x, this.y, this.size, this.size * 3, 0, 0, Math.PI * 2);
+    } else {
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
     }
+    ctx.fill();
   }
 }
 
@@ -436,120 +430,104 @@ class Particle {
  */
 class EmotionalParticleSystem {
   constructor(canvas) {
-    console.log('[EmotionalParticleSystem] Constructor called with canvas:', canvas);
+    debugLog('[Architect] Initializing Particle System...');
+    if (!canvas) {
+      console.error('FATAL: Canvas element is null/undefined!');
+      return;
+    }
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d', { alpha: true });
+
     if (!this.ctx) {
-      console.error('[EmotionalParticleSystem] Failed to get 2d context!');
+      console.error('[Architect] Failed to get 2d context!');
     }
-    console.log('[EmotionalParticleSystem] Canvas context:', this.ctx);
-    console.log('[EmotionalParticleSystem] Canvas size:', canvas.width, 'x', canvas.height);
+
     this.particles = [];
     this.isRunning = false;
     this.width = 0;
     this.height = 0;
+
+    // Initial sync
     this.resize();
 
-    window.addEventListener('resize', () => this.resize());
+    // Modern robust resizing using ResizeObserver
+    if (window.ResizeObserver) {
+      this.resizeObserver = new ResizeObserver(() => this.resize());
+      this.resizeObserver.observe(this.canvas);
+    } else {
+      window.addEventListener('resize', () => this.resize());
+    }
   }
 
   resize() {
-    const rect = document.documentElement.getBoundingClientRect();
-    this.width = rect.width;
-    this.height = rect.height;
+    // Get actual layout dimensions
+    const rect = this.canvas.getBoundingClientRect();
 
-    // Set canvas size (CSS handles display size)
+    // Set internal buffer to match observed visual size
+    this.width = Math.floor(rect.width);
+    this.height = Math.floor(rect.height);
+
+    // Important: syncing the buffer attributes
     this.canvas.width = this.width;
     this.canvas.height = this.height;
-    console.log('[Particle System] Canvas resized to:', this.width, 'x', this.height);
+
+    debugLog(`[Architect] Sync Complete - Visual size: ${this.width}x${this.height}, Buffer size: ${this.canvas.width}x${this.canvas.height}`);
+  }
+
+  /**
+   * Create cleansing rain from top
+   */
+  spawnRain(emotion) {
+    debugLog('[Particle System] Spawning rain for:', emotion);
+    this.resize(); // Ensure size is correct
+    const palette = EmotionEngine.getPalette(emotion);
+
+    // Spawn 500 rain drops
+    for (let i = 0; i < 500; i++) {
+      this.particles.push(new Particle(0, 0, emotion, palette, 'rain'));
+    }
+
+    if (!this.isRunning) this.start();
   }
 
   /**
    * Convert text to particles by rendering and sampling pixels
    */
   createTextParticles(text, emotion) {
-    this.particles = [];
+    this.resize();
+    if (this.width === 0 || this.height === 0) return;
 
-    // Ensure canvas has valid size
-    if (this.width === 0 || this.height === 0) {
-      this.resize();
-    }
-
-    console.log('[Particle System] createTextParticles called, canvas size:', this.width, 'x', this.height);
-
-    // Get color palette
+    debugLog('[Particle System] createTextParticles:', text);
     const palette = EmotionEngine.getPalette(emotion);
-    console.log('[Particle System] Palette:', palette);
 
-    // Create offscreen canvas for text rendering
     const offCanvas = document.createElement('canvas');
     const offCtx = offCanvas.getContext('2d');
-
     offCanvas.width = this.width;
     offCanvas.height = this.height;
 
-    // Calculate font size matching the CSS
     const fontSize = Math.min(64, Math.max(32, this.width / (text.length * 0.55)));
-    offCtx.font = `600 ${fontSize}px "Inter", -apple-system, sans-serif`;
+    offCtx.font = `600 ${fontSize}px "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif`;
 
-    // Draw text centered on canvas
     offCtx.fillStyle = '#ffffff';
     offCtx.textAlign = 'center';
     offCtx.textBaseline = 'middle';
     offCtx.fillText(text, this.width / 2, this.height / 2);
 
-    console.log('[Particle System] Text rendered at:', this.width / 2, this.height / 2, 'font size:', fontSize);
-
-    // Get pixel data
     const imageData = offCtx.getImageData(0, 0, this.width, this.height);
     const pixels = imageData.data;
-
-    // Sample pixels to create particles
     const gap = 5;
     let particleCount = 0;
-    let minX = this.width, maxX = 0, minY = this.height, maxY = 0;
 
     for (let y = 0; y < this.height; y += gap) {
       for (let x = 0; x < this.width; x += gap) {
-        // Check if pixel is filled (alpha > 128)
         const index = (y * this.width + x) * 4;
         if (pixels[index + 3] > 128) {
-          // Create particle at this position
-          const p = new Particle(x, y, emotion, palette);
-          this.particles.push(p);
+          this.particles.push(new Particle(x, y, emotion, palette, 'text'));
           particleCount++;
-          // Track bounds
-          if (x < minX) minX = x;
-          if (x > maxX) maxX = x;
-          if (y < minY) minY = y;
-          if (y > maxY) maxY = y;
-          // Log first particle
-          if (particleCount === 1) {
-            console.log('[Particle System] First particle at:', x, y, 'size:', p.size, 'color:', p.journey[0]);
-          }
         }
       }
     }
-
-    console.log(`[Particle System] Created ${particleCount} particles from text: "${text}"`);
-    console.log(`[Particle System] Canvas size: ${this.width}x${this.height}, Font size: ${fontSize}px`);
-    console.log(`[Particle System] Particle bounds: x[${minX}-${maxX}], y[${minY}-${maxY}]`);
-
-    // Verify particles array
-    if (this.particles.length > 0) {
-      const sample = this.particles[0];
-      console.log('[Particle System] Sample particle:', {
-        x: sample.x,
-        y: sample.y,
-        size: sample.size,
-        life: sample.life,
-        colorIndex: sample.colorIndex,
-        journey: sample.journey,
-        phase: sample.phase
-      });
-    } else {
-      console.error('[Particle System] WARNING: No particles created!');
-    }
+    debugLog(`[Particle System] Created ${particleCount} text particles`);
   }
 
   /**
@@ -557,8 +535,8 @@ class EmotionalParticleSystem {
    */
   releaseText() {
     this.particles.forEach(p => {
-      if (p.phase === 'holding') {
-        p.delay = 0; // Immediate explosion
+      if (p.type === 'text' && p.phase === 'holding') {
+        p.delay = 0;
       }
     });
   }
@@ -567,64 +545,35 @@ class EmotionalParticleSystem {
    * Main animation loop
    */
   update() {
-    // Clear canvas
     this.ctx.clearRect(0, 0, this.width, this.height);
 
-    // Debug: log frame
-    if (this._frameCount === undefined) this._frameCount = 0;
-    this._frameCount++;
-
-    if (this.particles.length > 0) {
-      if (this._frameCount === 1) {
-        console.log('[Particle System] First update call - drawing', this.particles.length, 'particles');
-      }
-      if (this._frameCount % 60 === 0) {
-        console.log(`[Particle System] Frame ${this._frameCount}: ${this.particles.length} particles, canvas ${this.width}x${this.height}`);
-      }
-    }
-
-    let drawnCount = 0;
-
-    // Update and draw particles
+    // Batch update
+    let activeCount = 0;
     this.particles = this.particles.filter(p => {
       const alive = p.update();
       if (alive && p.life > 0) {
         p.draw(this.ctx);
-        drawnCount++;
+        activeCount++;
       }
       return alive;
     });
 
-    if (this._frameCount === 1 && this.particles.length > 0) {
-      console.log('[Particle System] Drew', drawnCount, 'particles in first frame');
-    }
-
-    // Reset alpha
     this.ctx.globalAlpha = 1;
-
-    // Return true if any particles remain
-    return this.particles.length > 0;
+    return activeCount > 0;
   }
 
   /**
    * Start animation loop
    */
   start() {
-    console.log('[Particle System] Starting animation loop, canvas size:', this.canvas.width, 'x', this.canvas.height);
-    console.log('[Particle System] Particles to animate:', this.particles.length);
+    if (this.isRunning) return;
     this.isRunning = true;
-    let frameCount = 0;
     const animate = () => {
       if (!this.isRunning) return;
-      frameCount++;
       const hasParticles = this.update();
       if (hasParticles) {
-        if (frameCount % 30 === 0) {
-          console.log('[Particle System] Frame', frameCount + ', particles:', this.particles.length);
-        }
         requestAnimationFrame(animate);
       } else {
-        console.log('[Particle System] Animation loop ended - no particles');
         this.isRunning = false;
       }
     };
@@ -982,11 +931,81 @@ class EmotionalAudioEngine {
 }
 
 // ============================================
+// Release History - localStorage-backed tracking
+// ============================================
+class ReleaseHistory {
+  constructor() {
+    this.storageKey = 'emotionflow_history';
+  }
+
+  getAll() {
+    try {
+      return JSON.parse(localStorage.getItem(this.storageKey) || '[]');
+    } catch { return []; }
+  }
+
+  add(entry) {
+    const history = this.getAll();
+    history.unshift({
+      id: Date.now(),
+      timestamp: new Date().toISOString(),
+      emotion: entry.emotion,
+      preview: entry.text.substring(0, 40) + (entry.text.length > 40 ? '...' : ''),
+      message: entry.message
+    });
+    // Keep last 100 entries
+    if (history.length > 100) history.length = 100;
+    localStorage.setItem(this.storageKey, JSON.stringify(history));
+    return history;
+  }
+
+  clear() {
+    localStorage.removeItem(this.storageKey);
+  }
+
+  getStats() {
+    const history = this.getAll();
+    if (history.length === 0) return null;
+
+    const now = new Date();
+    const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+    const thisWeek = history.filter(h => new Date(h.timestamp) > weekAgo);
+
+    const emotionCounts = {};
+    history.forEach(h => {
+      emotionCounts[h.emotion] = (emotionCounts[h.emotion] || 0) + 1;
+    });
+    const topEmotion = Object.entries(emotionCounts).sort((a, b) => b[1] - a[1])[0];
+
+    // Calculate streak
+    let streak = 0;
+    const days = new Set();
+    history.forEach(h => {
+      days.add(new Date(h.timestamp).toDateString());
+    });
+    const today = new Date();
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today - i * 24 * 60 * 60 * 1000);
+      if (days.has(d.toDateString())) {
+        streak++;
+      } else if (i > 0) break;
+    }
+
+    return {
+      total: history.length,
+      thisWeek: thisWeek.length,
+      topEmotion: topEmotion ? topEmotion[0] : null,
+      streak
+    };
+  }
+}
+
+// ============================================
 // Main Application
 // ============================================
 class SadnessConfetti {
   constructor() {
-    console.log('[EmotionFlow] SadnessConfetti constructor called');
+    debugLog('[EmotionFlow] SadnessConfetti constructor called');
 
     // Elements
     this.body = document.body;
@@ -1019,6 +1038,24 @@ class SadnessConfetti {
     this.totalReleases = document.getElementById('totalReleases');
     this.milestoneFooter = document.getElementById('milestoneFooter');
 
+    // Share & History elements
+    this.shareBtn = document.getElementById('shareBtn');
+    this.historyToggle = document.getElementById('historyToggle');
+    this.historyPanel = document.getElementById('historyPanel');
+    this.historyOverlay = document.getElementById('historyOverlay');
+    this.historyClose = document.getElementById('historyClose');
+    this.historyStats = document.getElementById('historyStats');
+    this.historyEntries = document.getElementById('historyEntries');
+    this.clearHistoryBtn = document.getElementById('clearHistory');
+
+    // Share Modal Elements
+    this.shareModal = document.getElementById('shareModal');
+    this.closeShareModal = document.getElementById('closeShareModal');
+    this.sharePreviewCanvas = document.getElementById('sharePreviewCanvas');
+    this.downloadShareBtn = document.getElementById('downloadShareBtn');
+    this.copyShareBtn = document.getElementById('copyShareBtn');
+    this.shareOptionBtns = document.querySelectorAll('.share-option-btn');
+
     // State
     this.selectedEmotion = 'sadness';
     this.currentText = '';
@@ -1030,12 +1067,16 @@ class SadnessConfetti {
     this.requiredHoldTime = 1500;
     this.spacePressed = false;
     this.reduceMotion = false;
+    this.reduceMotion = false;
+    this.lastReleasedEmotion = null;
+    this.lastReleaseText = null;
+    this.lastReleaseMessage = null;
 
     // Systems
-    console.log('[EmotionFlow] Creating particle system...');
     this.particles = new EmotionalParticleSystem(this.canvas);
-    console.log('[EmotionFlow] Particle system created:', this.particles);
+    debugLog('[EmotionFlow] Particle system ready');
     this.audio = new EmotionalAudioEngine();
+    this.history = new ReleaseHistory();
 
     // Bind events
     this.bindEvents();
@@ -1119,6 +1160,48 @@ class SadnessConfetti {
 
     // Reset button
     this.resetBtn.addEventListener('click', () => this.reset());
+
+    if (this.shareBtn) {
+      this.shareBtn.addEventListener('click', () => this.shareRelease());
+    }
+
+    // Share Modal Events
+    if (this.closeShareModal) {
+      this.closeShareModal.addEventListener('click', () => this.toggleShareModal(false));
+    }
+    if (this.shareModal) {
+      this.shareModal.addEventListener('click', (e) => {
+        if (e.target === this.shareModal) this.toggleShareModal(false);
+      });
+    }
+    if (this.downloadShareBtn) {
+      this.downloadShareBtn.addEventListener('click', () => this.downloadShareImage());
+    }
+    if (this.copyShareBtn) {
+      this.copyShareBtn.addEventListener('click', () => this.copyShareImage());
+    }
+    if (this.shareOptionBtns) {
+      this.shareOptionBtns.forEach(btn => {
+        btn.addEventListener('click', () => this.shareToPlatform(btn.dataset.platform));
+      });
+    }
+
+    // History toggle
+    if (this.historyToggle) {
+      this.historyToggle.addEventListener('click', () => this.toggleHistory());
+    }
+    if (this.historyClose) {
+      this.historyClose.addEventListener('click', () => this.toggleHistory(false));
+    }
+    if (this.clearHistoryBtn) {
+      this.clearHistoryBtn.addEventListener('click', () => {
+        this.history.clear();
+        this.renderHistory();
+      });
+    }
+    if (this.historyOverlay) {
+      this.historyOverlay.addEventListener('click', () => this.toggleHistory(false));
+    }
 
     // Sound toggle
     this.soundToggle.addEventListener('click', () => this.toggleSound());
@@ -1410,10 +1493,13 @@ class SadnessConfetti {
     this.cancelClickRelease();
 
     const text = this.currentText.trim();
-    if (!text) return;
+    if (!text || text.length < 2) {
+      this.isReleasing = false;
+      return;
+    }
 
-    // Require at least 2 characters
-    if (text.length < 2) return;
+    // Capture text for history immediately
+    this.lastReleaseText = text;
 
     // Determine emotion
     let emotion = this.selectedEmotion;
@@ -1422,8 +1508,9 @@ class SadnessConfetti {
       emotion = detected.emotion === 'auto' ? 'sadness' : detected.emotion;
     }
 
-    // Use full text for display (up to 80 chars), or entire text if short
-    const displayText = text.length > 80 ? text.substring(0, 80) + '...' : text;
+    // Prepare display text — remove newlines (canvas fillText can't handle them)
+    let displayText = text.length > 80 ? text.substring(0, 80) + '...' : text;
+    displayText = displayText.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
 
     // Hide input section
     this.inputSection.style.transition = 'opacity 0.5s, transform 0.5s';
@@ -1436,52 +1523,51 @@ class SadnessConfetti {
     await this.delay(500);
     this.inputSection.style.display = 'none';
 
+    // CRITICAL: Make canvas visible and sized BEFORE creating particles
+    this.canvas.classList.add('active');
+    this.particles.resize();
+
     // Show release container with text
     this.releaseContainer.classList.add('active');
     this.releaseContainer.classList.add('building');
     this.releaseContainer.classList.add(emotion);
-    this.canvas.classList.add('active');
 
-    // Display the text that will be shattered - centered on screen
+    // Display the text that will be shattered
     this.textPreview.textContent = displayText;
     this.textPreview.style.opacity = '1';
 
-    // Create text particles at the exact position of the text (center of screen)
+    // Wait a frame for canvas to be fully visible, then create particles
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    this.particles.canvas.classList.add('active');
     this.particles.createTextParticles(displayText, emotion);
-
-    // Start animation loop IMMEDIATELY so particles are visible during build-up
-    // Particles will stay in 'holding' phase until releaseText() is called
     this.particles.start();
 
-    // Play a subtle build-up sound
+    // Play build-up sound
     this.audio.playRelease(emotion);
 
-    // PHASE 1: BUILDING - Text appears and builds tension (1.5s)
+    // PHASE 1: BUILDING — text appears and builds tension
     await this.delay(1500);
 
-    // PHASE 2: DEFORMING - Text distorts and twists (0.8s)
+    // PHASE 2: DEFORMING — text distorts
     this.releaseContainer.classList.remove('building');
     this.releaseContainer.classList.add('deforming');
-
     await this.delay(800);
 
-    // PHASE 3: SHATTERING - Text breaks apart and explodes (0.5s)
+    // PHASE 3: SHATTERING — text breaks apart
     this.releaseContainer.classList.remove('deforming');
     this.releaseContainer.classList.add('shattering');
-
     this.announce('Releasing your emotions...');
 
-    // Hide text preview IMMEDIATELY so particles are visible
+    // Hide text preview so particles are visible
     this.textPreview.style.opacity = '0';
-
-    // Start the shattering - particles break away from text positions
     this.particles.releaseText();
 
-    // Small delay for explosion to play out
+    // NEW: Cleansing rain from top
+    this.particles.spawnRain(emotion);
+
+    // Let explosion play out
     await this.delay(500);
-    this.releaseContainer.classList.remove('active');
-    this.releaseContainer.classList.remove('shattering');
-    this.releaseContainer.classList.remove(emotion);
+    this.releaseContainer.classList.remove('active', 'shattering', emotion);
 
     await this.delay(1500);
     this.transitionToAfterglow(emotion);
@@ -1493,6 +1579,7 @@ class SadnessConfetti {
   transitionToAfterglow(emotion) {
     this.body.dataset.state = 'afterglow';
     this.body.dataset.emotion = emotion;
+    this.particles.canvas.classList.remove('active');
   }
 
   showAfterglow(emotion) {
@@ -1516,6 +1603,15 @@ class SadnessConfetti {
 
     // Check for milestone - now shows as small footer note
     this.checkMilestone(releaseCount);
+
+    // Save to history
+    this.lastReleasedEmotion = emotion;
+    this.lastReleaseMessage = this.afterglowMessage.textContent;
+    this.history.add({
+      emotion,
+      text: this.lastReleaseText || this.currentText.trim(),
+      message: this.afterglowMessage.textContent
+    });
 
     this.announce('Your emotions have been released. ' + this.afterglowMessage.textContent);
 
@@ -1606,6 +1702,245 @@ class SadnessConfetti {
 
   delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // ============================================
+  // Share Feature
+  // ============================================
+  toggleShareModal(show) {
+    if (!this.shareModal) return;
+    if (show) {
+      this.shareModal.setAttribute('open', '');
+      this.shareModal.style.zIndex = '1000';
+    } else {
+      this.shareModal.removeAttribute('open');
+      this.shareModal.style.zIndex = '-1';
+    }
+  }
+
+  async shareRelease() {
+    this.toggleShareModal(true);
+    await this.generateShareImage();
+  }
+
+  async generateShareImage() {
+    const emotion = this.lastReleasedEmotion || this.selectedEmotion;
+    const message = this.lastReleaseMessage || 'I released my emotions.';
+    const palette = EmotionEngine.getPalette(emotion);
+
+    const canvas = this.sharePreviewCanvas;
+    // High resolution for retina/download
+    canvas.width = 1200;
+    canvas.height = 800;
+    const ctx = canvas.getContext('2d');
+
+    // Background gradient
+    const grad = ctx.createLinearGradient(0, 0, 1200, 800);
+    grad.addColorStop(0, '#0d1219');
+    grad.addColorStop(0.5, palette.heavy);
+    grad.addColorStop(1, '#0d1219');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 1200, 800);
+
+    // Decorative particles
+    for (let i = 0; i < 60; i++) {
+      const x = Math.random() * 1200;
+      const y = Math.random() * 800;
+      const r = Math.random() * 8 + 2;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = palette.journey[Math.floor(Math.random() * palette.journey.length)];
+      ctx.globalAlpha = 0.3 + Math.random() * 0.5;
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Emotion icon
+    const emotionIcons = {
+      sadness: '💧', anger: '🔥', anxiety: '🌀',
+      fear: '👻', shame: '🌑', loneliness: '🌫️', auto: '✨'
+    };
+    ctx.font = '96px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(emotionIcons[emotion] || '✨', 600, 160);
+
+    // Glow behind text
+    ctx.shadowColor = palette.peak;
+    ctx.shadowBlur = 40;
+
+    // Quote
+    ctx.font = '500 44px Inter, -apple-system, sans-serif';
+    ctx.fillStyle = palette.peace;
+    ctx.textAlign = 'center';
+
+    const words = message.split(' ');
+    let lines = [];
+    let currentLine = '';
+    words.forEach(word => {
+      const test = currentLine + (currentLine ? ' ' : '') + word;
+      if (ctx.measureText(test).width > 960) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = test;
+      }
+    });
+    if (currentLine) lines.push(currentLine);
+
+    const lineHeight = 64;
+    const startY = 400 - (lines.length * lineHeight) / 2;
+    lines.forEach((line, i) => {
+      ctx.fillText(line, 600, startY + i * lineHeight);
+    });
+
+    ctx.shadowBlur = 0;
+
+    // Branding
+    ctx.font = '400 28px Inter, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText('emotionflow.app', 600, 740);
+
+    // Divider line
+    ctx.strokeStyle = palette.primary;
+    ctx.globalAlpha = 0.3;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(400, 680);
+    ctx.lineTo(800, 680);
+    ctx.stroke();
+  }
+
+  async shareToPlatform(platform) {
+    const text = encodeURIComponent(`Thinking of you. I just used EmotionFlow to release "${this.lastReleaseMessage}". 🌊\n\nTry it yourself:`);
+    const url = 'https://emotionflow.app';
+    const urlEnc = encodeURIComponent(url);
+
+    let shareUrl = '';
+    switch (platform) {
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${urlEnc}`;
+        break;
+      case 'facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${urlEnc}`;
+        break;
+      case 'whatsapp':
+        shareUrl = `https://wa.me/?text=${text} ${urlEnc}`;
+        break;
+      case 'telegram':
+        shareUrl = `https://t.me/share/url?url=${urlEnc}&text=${text}`;
+        break;
+      case 'weibo':
+        shareUrl = `http://service.weibo.com/share/share.php?url=${urlEnc}&title=${text}&pic=${encodeURIComponent('https://emotionflow.app/og-image.png')}`;
+        break;
+      case 'qq':
+        shareUrl = `http://connect.qq.com/widget/shareqq/index.html?url=${urlEnc}&title=${encodeURIComponent('EmotionFlow Release')}&desc=${text}`;
+        break;
+      case 'wechat':
+      case 'xiaohongshu':
+      case 'discord':
+        // Fallback to copy image & text
+        await this.copyShareImage();
+        const appNames = { wechat: 'WeChat', xiaohongshu: 'Xiaohongshu', discord: 'Discord' };
+        alert(`Image & Text Copied! 📋\n\nPlease open ${appNames[platform]} and paste to share.`);
+        return;
+    }
+
+    if (shareUrl) {
+      window.open(shareUrl, '_blank', 'width=600,height=400');
+    }
+  }
+
+  downloadShareImage() {
+    const link = document.createElement('a');
+    link.download = `emotionflow-release-${Date.now()}.png`;
+    link.href = this.sharePreviewCanvas.toDataURL('image/png');
+    link.click();
+  }
+
+  async copyShareImage() {
+    try {
+      const blob = await new Promise(resolve => this.sharePreviewCanvas.toBlob(resolve));
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob })
+      ]);
+      const originalText = this.copyShareBtn.querySelector('span').textContent;
+      this.copyShareBtn.querySelector('span').textContent = 'Copied! ✓';
+      setTimeout(() => {
+        this.copyShareBtn.querySelector('span').textContent = originalText;
+      }, 2000);
+    } catch (err) {
+      console.error('Copy failed', err);
+      // Fallback
+      alert('To copy: Right-click the image and select "Copy Image"');
+    }
+  }
+
+  // ============================================
+  // History Feature
+  // ============================================
+  toggleHistory(show) {
+    if (!this.historyPanel) return;
+    const isCurrentlyOpen = this.historyPanel.classList.contains('open');
+    const shouldOpen = show !== undefined ? show : !isCurrentlyOpen;
+
+    if (shouldOpen) {
+      this.historyPanel.classList.add('open');
+      if (this.historyOverlay) this.historyOverlay.classList.add('open');
+      this.renderHistory();
+    } else {
+      this.historyPanel.classList.remove('open');
+      if (this.historyOverlay) this.historyOverlay.classList.remove('open');
+    }
+  }
+
+  renderHistory() {
+    const entries = this.history.getAll();
+    const stats = this.history.getStats();
+
+    // Render stats
+    if (this.historyStats && stats) {
+      const emotionEmojis = {
+        sadness: '💧', anger: '🔥', anxiety: '🌀',
+        fear: '👻', shame: '🌑', loneliness: '🌫️', auto: '✨'
+      };
+      this.historyStats.innerHTML = `
+        <div class="stat"><span class="stat-value">${stats.total}</span><span class="stat-label">Total</span></div>
+        <div class="stat"><span class="stat-value">${stats.thisWeek}</span><span class="stat-label">This Week</span></div>
+        <div class="stat"><span class="stat-value">${stats.streak}🔥</span><span class="stat-label">Streak</span></div>
+        <div class="stat"><span class="stat-value">${emotionEmojis[stats.topEmotion] || '—'}</span><span class="stat-label">Top</span></div>
+      `;
+    } else if (this.historyStats) {
+      this.historyStats.innerHTML = '';
+    }
+
+    // Render entries
+    if (this.historyEntries) {
+      if (entries.length === 0) {
+        this.historyEntries.innerHTML = '<p class="history-empty">No releases yet. Your journey begins here.</p>';
+        return;
+      }
+
+      const emotionEmojis = {
+        sadness: '💧', anger: '🔥', anxiety: '🌀',
+        fear: '👻', shame: '🌑', loneliness: '🌫️', auto: '✨'
+      };
+
+      this.historyEntries.innerHTML = entries.slice(0, 20).map(entry => {
+        const date = new Date(entry.timestamp);
+        const timeStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+          + ' ' + date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+        return `
+          <div class="history-entry" data-emotion="${entry.emotion}">
+            <span class="history-emoji">${emotionEmojis[entry.emotion] || '✨'}</span>
+            <div class="history-detail">
+              <span class="history-preview">${entry.preview}</span>
+              <span class="history-time">${timeStr}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
   }
 }
 
