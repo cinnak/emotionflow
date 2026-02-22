@@ -4,7 +4,7 @@
 // ============================================
 
 // Debug mode — set to true for verbose particle/canvas logging
-const DEBUG = true;
+const DEBUG = window.localStorage.getItem('emotionflow:debug') === '1';
 function debugLog(...args) {
   if (DEBUG) {
     console.log(...args);
@@ -22,6 +22,9 @@ function debugLog(...args) {
 }
 
 debugLog('[EmotionFlow] app.js loaded successfully!');
+if (DEBUG) {
+  console.info('[EmotionFlow] Debug mode enabled via localStorage key emotionflow:debug=1');
+}
 
 // ============================================
 // Color Palettes - Emotional Journeys

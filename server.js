@@ -2,9 +2,11 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 8080;
+const HOST = process.env.HOST || '0.0.0.0';
+const PORT = Number(process.env.PORT || 8080);
+const ROOT_DIR = __dirname;
 
-const mimeTypes = {
+const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -16,54 +18,122 @@ const mimeTypes = {
   '.ico': 'image/x-icon',
   '.webp': 'image/webp',
   '.woff2': 'font/woff2',
-  '.woff': 'font/woff'
+  '.woff': 'font/woff',
+  '.txt': 'text/plain; charset=utf-8'
 };
 
-const server = http.createServer((req, res) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+const NO_CACHE_PATHS = new Set(['/index.html']);
 
-  // Strip query params for file path resolution
-  let urlPath = req.url.split('?')[0];
-  let filePath = '.' + urlPath;
-  if (filePath === './') {
-    filePath = './index.html';
+function getSecurityHeaders() {
+  return {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'X-XSS-Protection': '0',
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Resource-Policy': 'same-origin'
+  };
+}
+
+function safeResolvePath(urlPath) {
+  const decoded = decodeURIComponent(urlPath);
+  const normalizedPath = decoded === '/' ? '/index.html' : decoded;
+  const relativePath = normalizedPath.replace(/^\/+/, '');
+  const absolutePath = path.resolve(ROOT_DIR, relativePath);
+
+  if (!absolutePath.startsWith(ROOT_DIR)) {
+    return null;
+  }
+  return absolutePath;
+}
+
+function resolveCacheControl(filePath) {
+  const extname = path.extname(filePath).toLowerCase();
+  const publicPath = `/${path.relative(ROOT_DIR, filePath).replace(/\\/g, '/')}`;
+
+  if (extname === '.html' || NO_CACHE_PATHS.has(publicPath)) {
+    return 'no-cache';
   }
 
-  const extname = String(path.extname(filePath)).toLowerCase();
-  const contentType = mimeTypes[extname] || 'application/octet-stream';
+  return 'public, max-age=3600, stale-while-revalidate=86400';
+}
 
-  fs.readFile(filePath, (error, content) => {
-    if (error) {
-      if (error.code === 'ENOENT') {
-        res.writeHead(404, { 'Content-Type': 'text/html' });
-        res.end('<h1>404 Not Found</h1>', 'utf-8');
-      } else {
-        res.writeHead(500);
-        res.end('Server Error: ' + error.code, 'utf-8');
+function sendJson(res, statusCode, payload) {
+  res.writeHead(statusCode, {
+    'Content-Type': 'application/json; charset=utf-8',
+    ...getSecurityHeaders(),
+    'Cache-Control': 'no-store'
+  });
+  res.end(JSON.stringify(payload));
+}
+
+function createServer() {
+  return http.createServer((req, res) => {
+    const requestUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    const urlPath = requestUrl.pathname;
+
+    console.log(`[${new Date().toISOString()}] ${req.method} ${urlPath}`);
+
+    if (req.method === 'GET' && urlPath === '/healthz') {
+      return sendJson(res, 200, {
+        status: 'ok',
+        uptime: Number(process.uptime().toFixed(2))
+      });
+    }
+
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      return sendJson(res, 405, { error: 'Method Not Allowed' });
+    }
+
+    const filePath = safeResolvePath(urlPath);
+    if (!filePath) {
+      return sendJson(res, 403, { error: 'Forbidden' });
+    }
+
+    const extname = path.extname(filePath).toLowerCase();
+    const contentType = MIME_TYPES[extname] || 'application/octet-stream';
+
+    fs.stat(filePath, (statErr, stats) => {
+      if (statErr || !stats.isFile()) {
+        if (statErr && statErr.code !== 'ENOENT') {
+          return sendJson(res, 500, { error: 'Internal Server Error' });
+        }
+        return sendJson(res, 404, { error: 'Not Found' });
       }
-    } else {
-      // Headers — CSP is handled by <meta> in index.html to avoid conflicts
+
       const headers = {
         'Content-Type': contentType,
-        'X-Content-Type-Options': 'nosniff',
-        'X-Frame-Options': 'DENY',
-        'Referrer-Policy': 'strict-origin-when-cross-origin'
+        ...getSecurityHeaders(),
+        'Cache-Control': resolveCacheControl(filePath)
       };
 
-      // Cache static assets (JS, CSS, images) but not HTML
-      if (extname !== '.html') {
-        headers['Cache-Control'] = 'public, max-age=3600';
-      } else {
-        headers['Cache-Control'] = 'no-cache';
+      if (req.method === 'HEAD') {
+        res.writeHead(200, headers);
+        return res.end();
       }
 
-      res.writeHead(200, headers);
-      res.end(content, 'utf-8');
-    }
-  });
-});
+      fs.readFile(filePath, (readErr, content) => {
+        if (readErr) {
+          return sendJson(res, 500, { error: 'Internal Server Error' });
+        }
 
-server.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}/`);
-  console.log('Press Ctrl+C to stop');
-});
+        res.writeHead(200, headers);
+        res.end(content);
+      });
+    });
+  });
+}
+
+if (require.main === module) {
+  const server = createServer();
+  server.listen(PORT, HOST, () => {
+    console.log(`EmotionFlow server running at http://${HOST}:${PORT}`);
+  });
+}
+
+module.exports = {
+  createServer,
+  safeResolvePath,
+  resolveCacheControl,
+  getSecurityHeaders
+};

@@ -1,11 +1,13 @@
 {
   "name": "emotionflow",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A digital ceremony for emotional release — feel it fully, let it go completely.",
   "main": "server.js",
   "scripts": {
     "dev": "node server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test",
+    "build": "echo \"No build step required for static MVP\""
   },
   "keywords": [
     "emotional-release",
@@ -15,5 +17,8 @@
     "web-audio"
   ],
   "author": "EmotionFlow",
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
 }
