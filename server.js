@@ -5,6 +5,7 @@ const path = require('path');
 const HOST = process.env.HOST || '0.0.0.0';
 const PORT = Number(process.env.PORT || 8080);
 const ROOT_DIR = __dirname;
+const ROOT_PREFIX = `${ROOT_DIR}${path.sep}`;
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -36,15 +37,24 @@ function getSecurityHeaders() {
 }
 
 function safeResolvePath(urlPath) {
-  const decoded = decodeURIComponent(urlPath);
-  const normalizedPath = decoded === '/' ? '/index.html' : decoded;
-  const relativePath = normalizedPath.replace(/^\/+/, '');
-  const absolutePath = path.resolve(ROOT_DIR, relativePath);
+  try {
+    const decoded = decodeURIComponent(urlPath);
+    if (decoded.includes('\0')) {
+      return null;
+    }
 
-  if (!absolutePath.startsWith(ROOT_DIR)) {
+    const normalizedPath = decoded === '/' ? '/index.html' : decoded;
+    const relativePath = normalizedPath.replace(/^\/+/, '');
+    const absolutePath = path.resolve(ROOT_DIR, relativePath);
+
+    if (absolutePath !== ROOT_DIR && !absolutePath.startsWith(ROOT_PREFIX)) {
+      return null;
+    }
+
+    return absolutePath;
+  } catch {
     return null;
   }
-  return absolutePath;
 }
 
 function resolveCacheControl(filePath) {
@@ -74,11 +84,20 @@ function createServer() {
 
     console.log(`[${new Date().toISOString()}] ${req.method} ${urlPath}`);
 
-    if (req.method === 'GET' && urlPath === '/healthz') {
-      return sendJson(res, 200, {
+    if ((req.method === 'GET' || req.method === 'HEAD') && urlPath === '/healthz') {
+      const payload = {
         status: 'ok',
         uptime: Number(process.uptime().toFixed(2))
-      });
+      };
+      if (req.method === 'HEAD') {
+        res.writeHead(200, {
+          'Content-Type': 'application/json; charset=utf-8',
+          ...getSecurityHeaders(),
+          'Cache-Control': 'no-store'
+        });
+        return res.end();
+      }
+      return sendJson(res, 200, payload);
     }
 
     if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -87,7 +106,7 @@ function createServer() {
 
     const filePath = safeResolvePath(urlPath);
     if (!filePath) {
-      return sendJson(res, 403, { error: 'Forbidden' });
+      return sendJson(res, 400, { error: 'Bad Request' });
     }
 
     const extname = path.extname(filePath).toLowerCase();
