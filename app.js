@@ -3,25 +3,6 @@
 // Based on psychological research for true catharsis
 // ============================================
 
-// Debug mode — set to true for verbose particle/canvas logging
-const DEBUG = true;
-function debugLog(...args) {
-  if (DEBUG) {
-    console.log(...args);
-    let consoleDiv = document.getElementById('debug-console');
-    if (!consoleDiv) {
-      consoleDiv = document.createElement('div');
-      consoleDiv.id = 'debug-console';
-      document.body.appendChild(consoleDiv);
-    }
-    const msg = document.createElement('div');
-    msg.textContent = args.map(a => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' ');
-    consoleDiv.appendChild(msg);
-    consoleDiv.scrollTop = consoleDiv.scrollHeight;
-  }
-}
-
-debugLog('[EmotionFlow] app.js loaded successfully!');
 
 // ============================================
 // Color Palettes - Emotional Journeys
@@ -430,7 +411,6 @@ class Particle {
  */
 class EmotionalParticleSystem {
   constructor(canvas) {
-    debugLog('[Architect] Initializing Particle System...');
     if (!canvas) {
       console.error('FATAL: Canvas element is null/undefined!');
       return;
@@ -471,14 +451,12 @@ class EmotionalParticleSystem {
     this.canvas.width = this.width;
     this.canvas.height = this.height;
 
-    debugLog(`[Architect] Sync Complete - Visual size: ${this.width}x${this.height}, Buffer size: ${this.canvas.width}x${this.canvas.height}`);
   }
 
   /**
    * Create cleansing rain from top
    */
   spawnRain(emotion) {
-    debugLog('[Particle System] Spawning rain for:', emotion);
     this.resize(); // Ensure size is correct
     const palette = EmotionEngine.getPalette(emotion);
 
@@ -497,7 +475,6 @@ class EmotionalParticleSystem {
     this.resize();
     if (this.width === 0 || this.height === 0) return;
 
-    debugLog('[Particle System] createTextParticles:', text);
     const palette = EmotionEngine.getPalette(emotion);
 
     const offCanvas = document.createElement('canvas');
@@ -527,7 +504,6 @@ class EmotionalParticleSystem {
         }
       }
     }
-    debugLog(`[Particle System] Created ${particleCount} text particles`);
   }
 
   /**
@@ -1005,7 +981,6 @@ class ReleaseHistory {
 // ============================================
 class SadnessConfetti {
   constructor() {
-    debugLog('[EmotionFlow] SadnessConfetti constructor called');
 
     // Elements
     this.body = document.body;
@@ -1074,7 +1049,6 @@ class SadnessConfetti {
 
     // Systems
     this.particles = new EmotionalParticleSystem(this.canvas);
-    debugLog('[EmotionFlow] Particle system ready');
     this.audio = new EmotionalAudioEngine();
     this.history = new ReleaseHistory();
 
