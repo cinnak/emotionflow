@@ -1,77 +1,52 @@
 # EmotionFlow
 
-> A digital ceremony for letting go. Release your emotions into beautiful particle effects.
+EmotionFlow 是一个轻量、隐私优先的情绪释放 Web 应用（静态前端 + Node.js 静态服务）。
 
-![EmotionFlow](https://img.shields.io/badge/emotions-release-brightgreen)
-![License](https://img.shields.io/badge/license-MIT-blue)
+## MVP 现状（可生产部署）
 
-## ✨ Features
+- 静态资源服务，支持 HTML/CSS/JS 与常见字体/图片类型
+- 安全响应头（`nosniff`、`DENY`、`COOP`、`CORP` 等）
+- 路径解析防护（拦截 `../`、非法编码、空字节请求）
+- `/healthz` 健康检查接口（支持 `GET/HEAD`，适合容器与平台探针）
+- 前端调试模式默认关闭，可通过 `localStorage` 显式开启
 
-- **Emotion-Aware Release**: Automatically detects your emotional state or choose manually
-- **Beautiful Particle Effects**: Watch your words transform and dissolve into colorful particles
-- **Ceremonial Experience**: Designed with intention—anticipation, release, and closure
-- **Sound Design**: Optional audio feedback for enhanced release (Web Audio API)
-- **Keyboard Shortcuts**: `Ctrl/Cmd + Enter` to release, `Escape` to reset
-- **Accessible**: Full keyboard navigation, ARIA labels, reduced motion support
-- **Privacy-First**: Everything runs locally in your browser
-
-## 🚀 Quick Start
+## 本地运行
 
 ```bash
-# Install dependencies (optional, for dev server)
-npm install
-
-# Start dev server
 npm run dev
-
-# Build for production
-npm run build
+# 默认监听 0.0.0.0:8080
 ```
 
-Or simply open `index.html` in any modern browser.
+可通过环境变量配置：
 
-## 🌐 Deploy to Vercel
+```bash
+HOST=0.0.0.0 PORT=3000 npm start
+```
 
-1. Push your code to GitHub
-2. Import project to [Vercel](https://vercel.com)
-3. Deploy!
+## 测试
 
-The `vercel.json` config is included for optimal performance.
+```bash
+npm test
+```
 
-## 🎨 Design Philosophy
+## 调试前端日志
 
-This app was designed with input from world-class UX researchers, meditation app designers, and emotional wellness experts:
+默认情况下不输出调试浮层。如需开启：
 
-- **Three-Phase Journey**: Intake → Release → Afterglow
-- **Color Psychology**: Each emotion has its own color palette
-- **Ceremonial Timing**: Not rushed—not hurried. Just right.
-- **Cathartic Release**: The explosion moment feels real and satisfying
+```js
+localStorage.setItem('emotionflow:debug', '1')
+location.reload()
+```
 
-## 📱 Tech Stack
+关闭：
 
-- Pure HTML/CSS/JavaScript (no frameworks)
-- Canvas API for particle effects
-- Web Audio API for sound
-- CSS Custom Properties for theming
-- Vercel for hosting
+```js
+localStorage.removeItem('emotionflow:debug')
+location.reload()
+```
 
-## 🎭 Emotions Supported
+## 部署建议
 
-| Emotion | Color | Feeling |
-|---------|-------|---------|
-| Sadness | Blue | Flowing, drifting release |
-| Anger | Red | Explosive, powerful burst |
-| Anxiety | Purple | Scattered, dissolving fade |
-| Auto | Green | Automatically detected |
-
-## 🤝 Contributing
-
-Feel free to open issues or PRs!
-
-## 📄 License
-
-MIT
-
----
-
-*Every emotion deserves to be felt, then released.*
+- Node.js 18+
+- 通过反向代理（Nginx / Cloudflare / Vercel）启用 HTTPS
+- 平台健康检查指向 `/healthz`
