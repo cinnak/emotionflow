@@ -2434,3 +2434,91 @@ body.reduce-motion .gradient-orb {
   padding: var(--space-sm);
   font-size: 0.875rem;
 }
+
+/* ============================================
+   Particle Canvas
+   ============================================ */
+
+.particle-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.particle-canvas.active {
+  opacity: 1;
+}
+
+/* ============================================
+   Guided Prompts
+   ============================================ */
+
+.guided-prompts {
+  margin-top: var(--space-sm);
+  text-align: center;
+}
+
+.prompts-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.prompt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  justify-content: center;
+}
+
+.prompt-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-family);
+}
+
+.prompt-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--current-emotion);
+  color: var(--text-primary);
+}
+
+/* ============================================
+   History Actions (Export + Clear)
+   ============================================ */
+
+.history-actions {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+}
+
+.export-history-btn {
+  flex: 1;
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-family);
+}
+
+.export-history-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
