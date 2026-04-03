@@ -25,6 +25,27 @@ const MIME_TYPES = {
 
 const NO_CACHE_PATHS = new Set(['/index.html']);
 
+// Files and patterns that should never be served to clients
+const BLOCKED_FILES = new Set([
+  'server.js',
+  'server.test.js',
+  'package.json',
+  'package-lock.json',
+  'vercel.json',
+  '.env',
+  '.env.local',
+  '.env.production',
+  'start-server.bat',
+  'start-server.ps1',
+  'COMMERCIAL_ASSESSMENT.md',
+  'HANDOFF_2026-02-12.md'
+]);
+
+const BLOCKED_DIRS = new Set(['.git', '.vercel', '.claude', 'node_modules']);
+
+// Only serve files with these extensions
+const ALLOWED_EXTENSIONS = new Set(Object.keys(MIME_TYPES));
+
 function getSecurityHeaders() {
   return {
     'X-Content-Type-Options': 'nosniff',
@@ -32,8 +53,34 @@ function getSecurityHeaders() {
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'X-XSS-Protection': '0',
     'Cross-Origin-Opener-Policy': 'same-origin',
-    'Cross-Origin-Resource-Policy': 'same-origin'
+    'Cross-Origin-Resource-Policy': 'same-origin',
+    'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data: blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
   };
+}
+
+function isBlockedPath(filePath) {
+  const relativePath = path.relative(ROOT_DIR, filePath);
+  const parts = relativePath.split(path.sep);
+
+  // Block hidden/sensitive directories
+  if (parts.some(part => BLOCKED_DIRS.has(part))) {
+    return true;
+  }
+
+  // Block specific sensitive files
+  const fileName = path.basename(filePath);
+  if (BLOCKED_FILES.has(fileName)) {
+    return true;
+  }
+
+  // Only serve files with allowed extensions
+  const ext = path.extname(filePath).toLowerCase();
+  if (!ALLOWED_EXTENSIONS.has(ext)) {
+    return true;
+  }
+
+  return false;
 }
 
 function safeResolvePath(urlPath) {
@@ -109,6 +156,10 @@ function createServer() {
       return sendJson(res, 400, { error: 'Bad Request' });
     }
 
+    if (isBlockedPath(filePath)) {
+      return sendJson(res, 404, { error: 'Not Found' });
+    }
+
     const extname = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[extname] || 'application/octet-stream';
 
@@ -154,5 +205,6 @@ module.exports = {
   createServer,
   safeResolvePath,
   resolveCacheControl,
-  getSecurityHeaders
+  getSecurityHeaders,
+  isBlockedPath
 };
