@@ -120,7 +120,7 @@ const EmotionEngine = {
     ],
     shame: [
       'ashamed', 'embarrassed', 'humiliated', 'guilty', 'worthless', 'inferior',
-      ' inadequate', 'unworthy', 'regret', 'mistake', 'failure', 'exposed',
+      'inadequate', 'unworthy', 'regret', 'mistake', 'failure', 'exposed',
       '羞耻', '尴尬', '丢脸', '内疚', '愧疚', '不值得', '后悔', '错误', '失败'
     ],
     loneliness: [
@@ -249,8 +249,6 @@ class Particle {
     this.emotion = emotion;
     this.palette = palette;
 
-    // Physics properties
-    this.vx = 0;
     this.type = type; // 'text' or 'rain'
 
     // Physics
@@ -258,6 +256,7 @@ class Particle {
     this.vy = 0;
     this.friction = 0.96;
     this.gravity = 0.1;
+    this.size = Math.random() * 3 + 1; // Default size for all particle types
 
     // Lifecycle
     this.life = 1.0;
@@ -1041,6 +1040,10 @@ class SadnessConfetti {
     this.totalReleases = document.getElementById('totalReleases');
     this.milestoneFooter = document.getElementById('milestoneFooter');
 
+    // Guided Prompts
+    this.guidedPrompts = document.getElementById('guidedPrompts');
+    this.promptChips = document.querySelectorAll('.prompt-chip');
+
     // Share & History elements
     this.shareBtn = document.getElementById('shareBtn');
     this.historyToggle = document.getElementById('historyToggle');
@@ -1050,6 +1053,7 @@ class SadnessConfetti {
     this.historyStats = document.getElementById('historyStats');
     this.historyEntries = document.getElementById('historyEntries');
     this.clearHistoryBtn = document.getElementById('clearHistory');
+    this.exportHistoryBtn = document.getElementById('exportHistory');
 
     // Share Modal Elements
     this.shareModal = document.getElementById('shareModal');
@@ -1069,7 +1073,6 @@ class SadnessConfetti {
     this.clickCountdownTimer = null;
     this.requiredHoldTime = 1500;
     this.spacePressed = false;
-    this.reduceMotion = false;
     this.reduceMotion = false;
     this.lastReleasedEmotion = null;
     this.lastReleaseText = null;
@@ -1206,6 +1209,23 @@ class SadnessConfetti {
       this.historyOverlay.addEventListener('click', () => this.toggleHistory(false));
     }
 
+    // Guided prompts
+    if (this.promptChips) {
+      this.promptChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          this.emotionInput.value = chip.dataset.prompt;
+          this.emotionInput.focus();
+          this.handleInput();
+          if (this.guidedPrompts) this.guidedPrompts.hidden = true;
+        });
+      });
+    }
+
+    // Export history
+    if (this.exportHistoryBtn) {
+      this.exportHistoryBtn.addEventListener('click', () => this.exportHistory());
+    }
+
     // Sound toggle
     this.soundToggle.addEventListener('click', () => this.toggleSound());
 
@@ -1336,6 +1356,13 @@ class SadnessConfetti {
     const length = this.currentText.length;
 
     this.charCount.textContent = length;
+
+    // Hide guided prompts once user starts typing
+    if (this.guidedPrompts && length > 0) {
+      this.guidedPrompts.hidden = true;
+    } else if (this.guidedPrompts && length === 0) {
+      this.guidedPrompts.hidden = false;
+    }
 
     if (length === 0) {
       this.inputStatus.textContent = 'Start typing...';
@@ -1674,6 +1701,9 @@ class SadnessConfetti {
       this.inputSection.style.transform = 'scale(1)';
     });
 
+    // Re-show guided prompts
+    if (this.guidedPrompts) this.guidedPrompts.hidden = false;
+
     this.selectEmotion('sadness');
     this.emotionInput.focus();
 
@@ -1713,11 +1743,9 @@ class SadnessConfetti {
   toggleShareModal(show) {
     if (!this.shareModal) return;
     if (show) {
-      this.shareModal.setAttribute('open', '');
-      this.shareModal.style.zIndex = '1000';
+      this.shareModal.showModal();
     } else {
-      this.shareModal.removeAttribute('open');
-      this.shareModal.style.zIndex = '-1';
+      this.shareModal.close();
     }
   }
 
@@ -1877,6 +1905,25 @@ class SadnessConfetti {
       // Fallback
       alert('To copy: Right-click the image and select "Copy Image"');
     }
+  }
+
+  // ============================================
+  // Data Export Feature
+  // ============================================
+  exportHistory() {
+    const entries = this.history.getAll();
+    if (entries.length === 0) {
+      alert('No release history to export.');
+      return;
+    }
+    const data = JSON.stringify({ exportedAt: new Date().toISOString(), releases: entries }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = `emotionflow-history-${new Date().toISOString().split('T')[0]}.json`;
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   // ============================================

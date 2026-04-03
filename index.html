@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <title>EmotionFlow | Emotional Release</title>
-  <link rel="stylesheet" href="styles.css?v=38">
+  <link rel="stylesheet" href="styles.css?v=39">
 </head>
 
 <body data-emotion="sadness">
@@ -86,6 +86,19 @@ Then hold the button or press Space to build your release." maxlength="1000"
         <div class="well-border left"></div>
       </div>
 
+      <!-- Guided Prompts -->
+      <div class="guided-prompts" id="guidedPrompts">
+        <p class="prompts-label">Not sure where to start?</p>
+        <div class="prompt-chips">
+          <button class="prompt-chip" data-prompt="I feel overwhelmed because...">I feel overwhelmed because...</button>
+          <button class="prompt-chip" data-prompt="I can't stop thinking about...">I can't stop thinking about...</button>
+          <button class="prompt-chip" data-prompt="I wish I could let go of...">I wish I could let go of...</button>
+          <button class="prompt-chip" data-prompt="What hurts the most is...">What hurts the most is...</button>
+          <button class="prompt-chip" data-prompt="I'm angry because...">I'm angry because...</button>
+          <button class="prompt-chip" data-prompt="I'm afraid that...">I'm afraid that...</button>
+        </div>
+      </div>
+
       <div class="input-footer">
         <div class="char-indicator">
           <span id="charCount">0</span>
@@ -122,6 +135,7 @@ Then hold the button or press Space to build your release." maxlength="1000"
 
     <!-- Release Animation Container -->
     <div class="release-container" id="releaseContainer" aria-hidden="true">
+      <canvas id="particleCanvas" class="particle-canvas" aria-hidden="true"></canvas>
       <div class="text-preview" id="textPreview"></div>
     </div>
 
@@ -238,7 +252,10 @@ Then hold the button or press Space to build your release." maxlength="1000"
     <div class="history-entries" id="historyEntries">
       <p class="history-empty">No releases yet. Your journey begins here.</p>
     </div>
-    <button id="clearHistory" class="clear-history-btn">Clear History</button>
+    <div class="history-actions">
+      <button id="exportHistory" class="export-history-btn">Export JSON</button>
+      <button id="clearHistory" class="clear-history-btn">Clear History</button>
+    </div>
   </aside>
 
   <!-- Share Modal -->
@@ -335,7 +352,7 @@ Then hold the button or press Space to build your release." maxlength="1000"
   </dialog>
 
   <!-- Version Update -->
-  <script type="module" src="app.js?v=38"></script>
+  <script type="module" src="app.js?v=39"></script>
 </body>
 
 </html>
