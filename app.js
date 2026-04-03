@@ -957,7 +957,15 @@ class ReleaseHistory {
     });
     // Keep last 100 entries
     if (history.length > 100) history.length = 100;
-    localStorage.setItem(this.storageKey, JSON.stringify(history));
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(history));
+    } catch (e) {
+      // Handle QuotaExceededError by trimming history
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        history.length = Math.floor(history.length / 2);
+        try { localStorage.setItem(this.storageKey, JSON.stringify(history)); } catch (_) { /* give up */ }
+      }
+    }
     return history;
   }
 
@@ -1954,12 +1962,26 @@ class SadnessConfetti {
         sadness: '💧', anger: '🔥', anxiety: '🌀',
         fear: '👻', shame: '🌑', loneliness: '🌫️', auto: '✨'
       };
-      this.historyStats.innerHTML = `
-        <div class="stat"><span class="stat-value">${stats.total}</span><span class="stat-label">Total</span></div>
-        <div class="stat"><span class="stat-value">${stats.thisWeek}</span><span class="stat-label">This Week</span></div>
-        <div class="stat"><span class="stat-value">${stats.streak}🔥</span><span class="stat-label">Streak</span></div>
-        <div class="stat"><span class="stat-value">${emotionEmojis[stats.topEmotion] || '—'}</span><span class="stat-label">Top</span></div>
-      `;
+      this.historyStats.innerHTML = '';
+      const statData = [
+        { value: String(stats.total), label: 'Total' },
+        { value: String(stats.thisWeek), label: 'This Week' },
+        { value: stats.streak + '\uD83D\uDD25', label: 'Streak' },
+        { value: emotionEmojis[stats.topEmotion] || '\u2014', label: 'Top' }
+      ];
+      statData.forEach(({ value, label }) => {
+        const stat = document.createElement('div');
+        stat.className = 'stat';
+        const valSpan = document.createElement('span');
+        valSpan.className = 'stat-value';
+        valSpan.textContent = value;
+        const lblSpan = document.createElement('span');
+        lblSpan.className = 'stat-label';
+        lblSpan.textContent = label;
+        stat.appendChild(valSpan);
+        stat.appendChild(lblSpan);
+        this.historyStats.appendChild(stat);
+      });
     } else if (this.historyStats) {
       this.historyStats.innerHTML = '';
     }
@@ -1976,20 +1998,37 @@ class SadnessConfetti {
         fear: '👻', shame: '🌑', loneliness: '🌫️', auto: '✨'
       };
 
-      this.historyEntries.innerHTML = entries.slice(0, 20).map(entry => {
+      this.historyEntries.innerHTML = '';
+      entries.slice(0, 20).forEach(entry => {
         const date = new Date(entry.timestamp);
         const timeStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
           + ' ' + date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-        return `
-          <div class="history-entry" data-emotion="${entry.emotion}">
-            <span class="history-emoji">${emotionEmojis[entry.emotion] || '✨'}</span>
-            <div class="history-detail">
-              <span class="history-preview">${entry.preview}</span>
-              <span class="history-time">${timeStr}</span>
-            </div>
-          </div>
-        `;
-      }).join('');
+
+        const div = document.createElement('div');
+        div.className = 'history-entry';
+        div.dataset.emotion = entry.emotion;
+
+        const emoji = document.createElement('span');
+        emoji.className = 'history-emoji';
+        emoji.textContent = emotionEmojis[entry.emotion] || '\u2728';
+
+        const detail = document.createElement('div');
+        detail.className = 'history-detail';
+
+        const preview = document.createElement('span');
+        preview.className = 'history-preview';
+        preview.textContent = entry.preview; // safe: textContent escapes HTML
+
+        const time = document.createElement('span');
+        time.className = 'history-time';
+        time.textContent = timeStr;
+
+        detail.appendChild(preview);
+        detail.appendChild(time);
+        div.appendChild(emoji);
+        div.appendChild(detail);
+        this.historyEntries.appendChild(div);
+      });
     }
   }
 }
