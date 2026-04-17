@@ -8,9 +8,9 @@
     <meta name="theme-color" content="#0d1219">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
     <title>Terms of Service | EmotionFlow</title>
-    <link rel="stylesheet" href="styles.css?v=11">
+    <link rel="stylesheet" href="styles.css?v=39">
     <style>
         .legal-page {
             max-width: 680px;
@@ -19,8 +19,9 @@
         }
 
         .legal-page h1 {
+            font-family: var(--font-family-display, 'Sora', sans-serif);
             font-size: 1.75rem;
-            font-weight: 500;
+            font-weight: 600;
             margin-bottom: 0.5rem;
         }
 
@@ -69,17 +70,23 @@
         }
 
         .disclaimer-box {
-            background: rgba(255, 180, 50, 0.08);
-            border: 1px solid rgba(255, 180, 50, 0.2);
+            background: #fff8e6;
+            border: 1px solid rgba(255, 180, 50, 0.5);
             border-radius: 1rem;
             padding: 1.5rem;
             margin: 1.5rem 0;
         }
 
-        .disclaimer-box h3 {
-            color: rgba(255, 200, 80, 0.9);
+        .disclaimer-box h2 {
+            color: #805000;
             font-size: 1rem;
+            font-weight: 600;
             margin-bottom: 0.75rem;
+        }
+
+        .disclaimer-box p,
+        .disclaimer-box li {
+            color: #504a30;
         }
     </style>
 </head>
@@ -91,7 +98,7 @@
         <p class="updated">Last updated: February 13, 2026</p>
 
         <div class="disclaimer-box">
-            <h3>⚠️ Medical Disclaimer</h3>
+            <h2>⚠️ Medical Disclaimer</h2>
             <p>EmotionFlow is <strong>not</strong> a medical device, therapy tool, or substitute for professional mental
                 health care. It is a wellness application designed for emotional expression and self-reflection.</p>
             <p>If you are experiencing a mental health crisis, please contact a professional immediately:</p>

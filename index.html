@@ -10,7 +10,7 @@
     content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data: blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
   <title>EmotionFlow | Emotional Release</title>
   <link rel="stylesheet" href="styles.css?v=39">
 </head>
@@ -54,19 +54,23 @@
         <span class="emotion-icon">🌀</span>
         <span class="emotion-label">Anxiety</span>
       </button>
-      <button class="emotion-btn" data-emotion="fear" role="radio" aria-checked="false" tabindex="0">
+      <button class="emotion-btn more-emotions" data-emotion="more" role="radio" aria-checked="false" tabindex="0">
+        <span class="emotion-icon">+</span>
+        <span class="emotion-label">More</span>
+      </button>
+      <button class="emotion-btn hidden" data-emotion="fear" role="radio" aria-checked="false" tabindex="0">
         <span class="emotion-icon">👻</span>
         <span class="emotion-label">Fear</span>
       </button>
-      <button class="emotion-btn" data-emotion="shame" role="radio" aria-checked="false" tabindex="0">
+      <button class="emotion-btn hidden" data-emotion="shame" role="radio" aria-checked="false" tabindex="0">
         <span class="emotion-icon">🌑</span>
         <span class="emotion-label">Shame</span>
       </button>
-      <button class="emotion-btn" data-emotion="loneliness" role="radio" aria-checked="false" tabindex="0">
+      <button class="emotion-btn hidden" data-emotion="loneliness" role="radio" aria-checked="false" tabindex="0">
         <span class="emotion-icon">🌫️</span>
         <span class="emotion-label">Loneliness</span>
       </button>
-      <button class="emotion-btn" data-emotion="auto" role="radio" aria-checked="false" tabindex="0">
+      <button class="emotion-btn hidden" data-emotion="auto" role="radio" aria-checked="false" tabindex="0">
         <span class="emotion-icon">✨</span>
         <span class="emotion-label">Auto</span>
       </button>
@@ -74,10 +78,9 @@
 
     <!-- Input Section -->
     <section class="input-section" id="inputSection">
+      <label for="emotionInput" class="input-label">What do you need to let go of?</label>
       <div class="emotion-well">
-        <textarea id="emotionInput" class="emotion-input" placeholder="What do you need to let go of?
-
-Pour it out here. Let yourself feel it fully.
+        <textarea id="emotionInput" class="emotion-input" placeholder="Pour it out here. Let yourself feel it fully.
 Then hold the button or press Space to build your release." maxlength="1000"
           aria-label="Write your emotions here"></textarea>
         <div class="well-border top"></div>
@@ -88,8 +91,8 @@ Then hold the button or press Space to build your release." maxlength="1000"
 
       <!-- Guided Prompts -->
       <div class="guided-prompts" id="guidedPrompts">
-        <p class="prompts-label">Not sure where to start?</p>
-        <div class="prompt-chips">
+        <p class="prompts-label" id="promptsLabel">Not sure where to start?</p>
+        <div class="prompt-chips" role="group" aria-labelledby="promptsLabel">
           <button class="prompt-chip" data-prompt="I feel overwhelmed because...">I feel overwhelmed because...</button>
           <button class="prompt-chip" data-prompt="I can't stop thinking about...">I can't stop thinking about...</button>
           <button class="prompt-chip" data-prompt="I wish I could let go of...">I wish I could let go of...</button>
@@ -104,6 +107,7 @@ Then hold the button or press Space to build your release." maxlength="1000"
           <span id="charCount">0</span>
           <span class="char-divider">/</span>
           <span>1000</span>
+          <div class="char-progress"><div class="char-progress-fill" id="charProgressFill"></div></div>
         </div>
         <div class="input-status" id="inputStatus">Start typing...</div>
       </div>
@@ -112,7 +116,7 @@ Then hold the button or press Space to build your release." maxlength="1000"
         <button id="releaseBtn" class="release-btn" disabled aria-describedby="releaseHelp">
           <span class="btn-content">
             <span class="btn-text">Hold to Release</span>
-            <span class="btn-subtitle">or press and hold Space</span>
+            <span class="btn-subtitle">hold 1.5 seconds</span>
           </span>
           <div class="charge-indicator">
             <div class="charge-fill" id="chargeFill"></div>
@@ -245,18 +249,68 @@ Then hold the button or press Space to build your release." maxlength="1000"
   <!-- Release History Panel -->
   <aside id="historyPanel" class="history-panel">
     <div class="history-header">
-      <h2>Release History</h2>
+      <div class="history-tabs">
+        <button class="history-tab active" data-tab="releases" aria-pressed="true">Releases</button>
+        <button class="history-tab" data-tab="journal" aria-pressed="false">Journal</button>
+      </div>
       <button id="historyClose" class="history-close" aria-label="Close history">✕</button>
     </div>
     <div class="history-stats" id="historyStats"></div>
-    <div class="history-entries" id="historyEntries">
-      <p class="history-empty">No releases yet. Your journey begins here.</p>
+    <div class="history-content" id="historyContent">
+      <div class="history-entries" id="historyEntries">
+        <p class="history-empty">No releases yet. Your journey begins here.</p>
+      </div>
+      <div class="journal-view hidden" id="journalView">
+        <div class="journal-header">
+          <p class="journal-date" id="journalWeekDate"></p>
+        </div>
+        <div class="mood-calendar" id="moodCalendar"></div>
+        <div class="checkin-btn-container">
+          <button id="checkInBtn" class="checkin-btn">Check In</button>
+        </div>
+        <div class="journal-entries" id="journalEntries">
+          <p class="journal-empty">Your reflections will appear here.</p>
+        </div>
+      </div>
     </div>
     <div class="history-actions">
       <button id="exportHistory" class="export-history-btn">Export JSON</button>
       <button id="clearHistory" class="clear-history-btn">Clear History</button>
     </div>
   </aside>
+
+  <!-- Reflection Modal (post-release) -->
+  <dialog id="reflectionModal" class="reflection-modal">
+    <div class="reflection-content">
+      <button class="reflection-close" id="closeReflection" aria-label="Close">✕</button>
+      <h2>What arose for you?</h2>
+      <p class="reflection-hint">A quick note about what you noticed, if anything.</p>
+      <textarea id="reflectionInput" class="reflection-input" placeholder="I noticed..." maxlength="500"></textarea>
+      <div class="reflection-actions">
+        <button id="skipReflection" class="reflection-skip">Skip</button>
+        <button id="saveReflection" class="reflection-save">Save</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Check-In Modal -->
+  <dialog id="checkInModal" class="checkin-modal">
+    <div class="checkin-content">
+      <h2>How are you feeling?</h2>
+      <div class="mood-selector" id="moodSelector">
+        <button class="mood-option" data-mood="1" aria-label="Very low">😢</button>
+        <button class="mood-option" data-mood="2" aria-label="Low">😕</button>
+        <button class="mood-option" data-mood="3" aria-label="Okay">😐</button>
+        <button class="mood-option" data-mood="4" aria-label="Good">🙂</button>
+        <button class="mood-option" data-mood="5" aria-label="Great">😄</button>
+      </div>
+      <textarea id="checkInNote" class="checkin-note" placeholder="Optional note..." maxlength="500"></textarea>
+      <div class="checkin-actions">
+        <button id="cancelCheckIn" class="checkin-cancel">Cancel</button>
+        <button id="saveCheckIn" class="checkin-save">Save</button>
+      </div>
+    </div>
+  </dialog>
 
   <!-- Share Modal -->
   <dialog id="shareModal" class="share-modal">
@@ -272,20 +326,13 @@ Then hold the button or press Space to build your release." maxlength="1000"
       </div>
 
       <div class="share-options">
-        <!-- Row 1: Global Social -->
+        <!-- Primary: Top 3 platforms -->
         <button class="share-option-btn twitter" data-platform="twitter" aria-label="Share on X (Twitter)">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path
               d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
           </svg>
           <span>Post</span>
-        </button>
-        <button class="share-option-btn facebook" data-platform="facebook" aria-label="Share on Facebook">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 2.848-5.978 5.817-5.978.3 0 .56.015.823.043v3.072h-1.777c-1.103 0-1.74.969-1.74 2.25v2.192h4.292l-.568 3.667h-3.724v7.98h-3.123z" />
-          </svg>
-          <span>Facebook</span>
         </button>
         <button class="share-option-btn whatsapp" data-platform="whatsapp" aria-label="Share on WhatsApp">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -294,31 +341,46 @@ Then hold the button or press Space to build your release." maxlength="1000"
           </svg>
           <span>WhatsApp</span>
         </button>
+        <button class="share-option-btn clipboard" data-platform="clipboard" aria-label="Copy to clipboard">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+          </svg>
+          <span>Copy Link</span>
+        </button>
+        <button class="share-option-btn more-platforms" data-platform="more" aria-label="More options">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+          </svg>
+          <span>More</span>
+        </button>
 
-        <!-- Row 2: Direct Share (Asia) -->
-        <button class="share-option-btn telegram" data-platform="telegram" aria-label="Share on Telegram">
+        <!-- Hidden: More platforms -->
+        <button class="share-option-btn facebook hidden-share" data-platform="facebook" aria-label="Share on Facebook">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 2.848-5.978 5.817-5.978.3 0 .56.015.823.043v3.072h-1.777c-1.103 0-1.74.969-1.74 2.25v2.192h4.292l-.568 3.667h-3.724v7.98h-3.123z" />
+          </svg>
+          <span>Facebook</span>
+        </button>
+        <button class="share-option-btn telegram hidden-share" data-platform="telegram" aria-label="Share on Telegram">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path
               d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.4-1.08.39-.35-.01-1.03-.2-1.54-.35-.62-.18-1.12-.28-1.04-.6.04-.15.35-.31.96-.48 3.78-1.63 6.31-2.7 7.59-3.21 3.61-1.42 4.36-1.66 4.85-1.67.11 0 .35.03.5.15.15.13.19.31.21.43-.02.05-.01.12 0 .28z" />
           </svg>
           <span>Telegram</span>
         </button>
-        <button class="share-option-btn weibo" data-platform="weibo" aria-label="Share on Weibo">
+        <button class="share-option-btn weibo hidden-share" data-platform="weibo" aria-label="Share on Weibo">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" />
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" />
           </svg>
           <span>Weibo</span>
         </button>
-        <button class="share-option-btn qq" data-platform="qq" aria-label="Share on QQ">
+        <button class="share-option-btn qq hidden-share" data-platform="qq" aria-label="Share on QQ">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z" />
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z" />
           </svg>
           <span>QQ</span>
         </button>
-
-        <!-- Row 3: Copy Fallback -->
         <button class="share-option-btn wechat" data-platform="wechat" aria-label="Share on WeChat">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M7 10h2v2H7zm4 0h2v2h-2zm-5-5h12v12H6V5z" />

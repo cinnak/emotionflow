@@ -938,6 +938,7 @@ class EmotionalAudioEngine {
 class ReleaseHistory {
   constructor() {
     this.storageKey = 'emotionflow_history';
+    this.journalKey = 'emotionflow_journal';
   }
 
   getAll() {
@@ -953,7 +954,8 @@ class ReleaseHistory {
       timestamp: new Date().toISOString(),
       emotion: entry.emotion,
       preview: entry.text.substring(0, 40) + (entry.text.length > 40 ? '...' : ''),
-      message: entry.message
+      message: entry.message,
+      reflection: entry.reflection || null
     });
     // Keep last 100 entries
     if (history.length > 100) history.length = 100;
@@ -971,6 +973,72 @@ class ReleaseHistory {
 
   clear() {
     localStorage.removeItem(this.storageKey);
+  }
+
+  // ===================
+  // Journal Methods
+  // ===================
+  getJournalEntries() {
+    try {
+      return JSON.parse(localStorage.getItem(this.journalKey) || '[]');
+    } catch { return []; }
+  }
+
+  addReflection(releaseId, reflection) {
+    const history = this.getAll();
+    const entry = history.find(h => h.id === releaseId);
+    if (entry) {
+      entry.reflection = reflection;
+      localStorage.setItem(this.storageKey, JSON.stringify(history));
+    }
+    return history;
+  }
+
+  addMoodCheckIn(mood, note) {
+    const journal = this.getJournalEntries();
+    journal.unshift({
+      id: Date.now(),
+      timestamp: new Date().toISOString(),
+      type: 'checkin',
+      mood: mood,
+      note: note || ''
+    });
+    // Keep last 100 entries
+    if (journal.length > 100) journal.length = 100;
+    try {
+      localStorage.setItem(this.journalKey, JSON.stringify(journal));
+    } catch (e) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        journal.length = Math.floor(journal.length / 2);
+        try { localStorage.setItem(this.journalKey, JSON.stringify(journal)); } catch (_) {}
+      }
+    }
+    return journal;
+  }
+
+  getWeeklyMoods() {
+    const journal = this.getJournalEntries();
+    const now = new Date();
+    const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+    const moods = [];
+    // Get check-ins from last 7 days grouped by day
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dayStr = d.toDateString();
+      const dayCheckIns = journal.filter(j => 
+        j.type === 'checkin' && new Date(j.timestamp).toDateString() === dayStr
+      );
+      moods.push({
+        date: dayStr,
+        mood: dayCheckIns.length > 0 ? dayCheckIns[0].mood : null
+      });
+    }
+    return moods;
+  }
+
+  clearJournal() {
+    localStorage.removeItem(this.journalKey);
   }
 
   getStats() {
@@ -1021,6 +1089,7 @@ class SadnessConfetti {
     this.body = document.body;
     this.emotionInput = document.getElementById('emotionInput');
     this.charCount = document.getElementById('charCount');
+    this.charProgressFill = document.getElementById('charProgressFill');
     this.inputStatus = document.getElementById('inputStatus');
     this.releaseBtn = document.getElementById('releaseBtn');
     this.chargeFill = document.getElementById('chargeFill');
@@ -1060,8 +1129,30 @@ class SadnessConfetti {
     this.historyClose = document.getElementById('historyClose');
     this.historyStats = document.getElementById('historyStats');
     this.historyEntries = document.getElementById('historyEntries');
+    this.historyContent = document.getElementById('historyContent');
+    this.historyTabs = document.querySelectorAll('.history-tab');
+    this.journalView = document.getElementById('journalView');
+    this.journalEntries = document.getElementById('journalEntries');
+    this.moodCalendar = document.getElementById('moodCalendar');
+    this.journalWeekDate = document.getElementById('journalWeekDate');
+    this.checkInBtn = document.getElementById('checkInBtn');
     this.clearHistoryBtn = document.getElementById('clearHistory');
     this.exportHistoryBtn = document.getElementById('exportHistory');
+
+    // Reflection Modal
+    this.reflectionModal = document.getElementById('reflectionModal');
+    this.reflectionInput = document.getElementById('reflectionInput');
+    this.skipReflection = document.getElementById('skipReflection');
+    this.saveReflection = document.getElementById('saveReflection');
+    this.closeReflection = document.getElementById('closeReflection');
+
+    // Check-In Modal
+    this.checkInModal = document.getElementById('checkInModal');
+    this.moodSelector = document.getElementById('moodSelector');
+    this.moodOptions = document.querySelectorAll('.mood-option');
+    this.checkInNote = document.getElementById('checkInNote');
+    this.cancelCheckIn = document.getElementById('cancelCheckIn');
+    this.saveCheckIn = document.getElementById('saveCheckIn');
 
     // Share Modal Elements
     this.shareModal = document.getElementById('shareModal');
@@ -1071,20 +1162,20 @@ class SadnessConfetti {
     this.copyShareBtn = document.getElementById('copyShareBtn');
     this.shareOptionBtns = document.querySelectorAll('.share-option-btn');
 
-    // State
+// State
     this.selectedEmotion = 'sadness';
     this.currentText = '';
-    this.isReleasing = false;
     this.isHolding = false;
     this.holdStartTime = 0;
-    this.holdTimer = null;
-    this.clickCountdownTimer = null;
-    this.requiredHoldTime = 1500;
-    this.spacePressed = false;
+    this.holdInterval = null;
+    this.isClickHolding = false;
+    this.clickHoldTime = 0;
+    this.clickHoldInterval = null;
+    this.lastReleaseMessage = '';
+    this.lastReleasedEmotion = '';
     this.reduceMotion = false;
-    this.lastReleasedEmotion = null;
-    this.lastReleaseText = null;
-    this.lastReleaseMessage = null;
+    this.DRAFT_KEY = 'emotionflow:draft';
+    this.pendingReleaseId = null;
 
     // Systems
     this.particles = new EmotionalParticleSystem(this.canvas);
@@ -1124,6 +1215,9 @@ class SadnessConfetti {
     if (this.totalReleases) {
       this.totalReleases.textContent = releaseCount;
     }
+
+    // Restore draft if exists
+    this.restoreDraft();
   }
 
   checkMotionPreference() {
@@ -1196,7 +1290,14 @@ class SadnessConfetti {
     }
     if (this.shareOptionBtns) {
       this.shareOptionBtns.forEach(btn => {
-        btn.addEventListener('click', () => this.shareToPlatform(btn.dataset.platform));
+        if (btn.dataset.platform === 'more') {
+          btn.addEventListener('click', () => {
+            btn.classList.add('hidden');
+            document.querySelectorAll('.hidden-share').forEach(b => b.classList.remove('hidden-share'));
+          });
+        } else {
+          btn.addEventListener('click', () => this.shareToPlatform(btn.dataset.platform));
+        }
       });
     }
 
@@ -1215,6 +1316,55 @@ class SadnessConfetti {
     }
     if (this.historyOverlay) {
       this.historyOverlay.addEventListener('click', () => this.toggleHistory(false));
+    }
+
+    // History tabs
+    if (this.historyTabs) {
+      this.historyTabs.forEach(tab => {
+        tab.addEventListener('click', () => this.switchHistoryTab(tab.dataset.tab));
+      });
+    }
+
+    // Check-in button
+    if (this.checkInBtn) {
+      this.checkInBtn.addEventListener('click', () => this.openCheckIn());
+    }
+
+    // Reflection modal
+    if (this.skipReflection) {
+      this.skipReflection.addEventListener('click', () => this.closeReflection());
+    }
+    if (this.closeReflection) {
+      this.closeReflection.addEventListener('click', () => this.closeReflection());
+    }
+    if (this.saveReflection) {
+      this.saveReflection.addEventListener('click', () => this.saveReflectionEntry());
+    }
+    if (this.reflectionModal) {
+      this.reflectionModal.addEventListener('click', (e) => {
+        if (e.target === this.reflectionModal) this.closeReflection();
+      });
+    }
+
+    // Check-in modal
+    if (this.cancelCheckIn) {
+      this.cancelCheckIn.addEventListener('click', () => this.closeCheckIn());
+    }
+    if (this.saveCheckIn) {
+      this.saveCheckIn.addEventListener('click', () => this.saveCheckInEntry());
+    }
+    if (this.checkInModal) {
+      this.checkInModal.addEventListener('click', (e) => {
+        if (e.target === this.checkInModal) this.closeCheckIn();
+      });
+    }
+    if (this.moodOptions) {
+      this.moodOptions.forEach(opt => {
+        opt.addEventListener('click', () => {
+          this.moodOptions.forEach(o => o.classList.remove('selected'));
+          opt.classList.add('selected');
+        });
+      });
     }
 
     // Guided prompts
@@ -1336,9 +1486,20 @@ class SadnessConfetti {
   }
 
   selectEmotion(emotion) {
+    // Handle "More" button - show all emotions
+    if (emotion === 'more') {
+      this.emotionBtns.forEach(btn => {
+        btn.classList.remove('hidden');
+      });
+      const moreBtn = document.querySelector('.emotion-btn.more-emotions');
+      if (moreBtn) moreBtn.classList.add('hidden');
+      return;
+    }
+
     this.selectedEmotion = emotion;
 
     this.emotionBtns.forEach(btn => {
+      if (btn.classList.contains('hidden')) return;
       const isActive = btn.dataset.emotion === emotion;
       btn.classList.toggle('active', isActive);
       btn.setAttribute('aria-checked', isActive);
@@ -1364,6 +1525,27 @@ class SadnessConfetti {
     const length = this.currentText.length;
 
     this.charCount.textContent = length;
+
+    // Update progress bar
+    this.charProgressFill = this.charProgressFill || document.getElementById('charProgressFill');
+    if (this.charProgressFill) {
+      this.charProgressFill.style.transform = `scaleX(${Math.min(length / 1000, 1)})`;
+    }
+
+    // Show progress on focus/content
+    const charIndicator = this.charCount.parentElement;
+    if (charIndicator) {
+      charIndicator.classList.toggle('has-content', length > 0);
+    }
+
+    // Add encouraging animation at milestones
+    if (charIndicator && (length === 50 || length === 200 || length === 500)) {
+      charIndicator.classList.add('encouraging');
+      setTimeout(() => charIndicator.classList.remove('encouraging'), 300);
+    }
+
+    // Auto-save draft on input
+    this.saveDraft();
 
     // Hide guided prompts once user starts typing
     if (this.guidedPrompts && length > 0) {
@@ -1405,6 +1587,26 @@ class SadnessConfetti {
     this.updateReleaseButton();
   }
 
+  saveDraft() {
+    if (this.currentText.trim().length > 0) {
+      sessionStorage.setItem(this.DRAFT_KEY, this.currentText);
+    }
+  }
+
+  restoreDraft() {
+    const draft = sessionStorage.getItem(this.DRAFT_KEY);
+    if (draft && !this.currentText) {
+      this.emotionInput.value = draft;
+      this.currentText = draft;
+      this.charCount.textContent = draft.length;
+      this.handleInput();
+    }
+  }
+
+  clearDraft() {
+    sessionStorage.removeItem(this.DRAFT_KEY);
+  }
+
   handleFocus() {
     this.audio.init();
   }
@@ -1441,7 +1643,7 @@ class SadnessConfetti {
       const elapsed = Date.now() - this.holdStartTime;
       const progress = Math.min(elapsed / this.requiredHoldTime, 1);
 
-      this.chargeFill.style.width = `${progress * 100}%`;
+      this.chargeFill.style.transform = `scaleX(${progress})`;
 
       const btnText = this.releaseBtn.querySelector('.btn-text');
       if (progress < 0.33) {
@@ -1642,6 +1844,14 @@ class SadnessConfetti {
     // Check for milestone - now shows as small footer note
     this.checkMilestone(releaseCount);
 
+    // Store pending release ID for reflection
+    this.pendingReleaseId = Date.now();
+
+    // Show reflection prompt after 3 seconds
+    setTimeout(() => {
+      this.showReflection();
+    }, 3000);
+
     // Save to history
     this.lastReleasedEmotion = emotion;
     this.lastReleaseMessage = this.afterglowMessage.textContent;
@@ -1697,6 +1907,9 @@ class SadnessConfetti {
     this.particles.reset();
     this.canvas.classList.remove('active');
 
+    // Clear draft after successful release
+    this.clearDraft();
+
     this.emotionInput.value = '';
     this.currentText = '';
     this.charCount.textContent = '0';
@@ -1725,6 +1938,7 @@ class SadnessConfetti {
     const enabled = this.audio.toggle();
     this.soundIcon.textContent = enabled ? '🔊' : '🔇';
     localStorage.setItem('soundEnabled', enabled);
+    this.animateToggle(this.soundToggle);
   }
 
   toggleMotion() {
@@ -1739,6 +1953,13 @@ class SadnessConfetti {
       this.motionToggle.setAttribute('aria-label', 'Reduce motion');
       localStorage.setItem('reduceMotion', 'false');
     }
+    this.animateToggle(this.motionToggle);
+  }
+
+  animateToggle(el) {
+    if (!el || this.reduceMotion) return;
+    el.classList.add('animating');
+    setTimeout(() => el.classList.remove('animating'), 300);
   }
 
   delay(ms) {
@@ -2030,6 +2251,163 @@ class SadnessConfetti {
         this.historyEntries.appendChild(div);
       });
     }
+  }
+
+  // ===================
+  // Journal Methods
+  // ===================
+  switchHistoryTab(tab) {
+    this.historyTabs.forEach(t => {
+      t.classList.toggle('active', t.dataset.tab === tab);
+      t.setAttribute('aria-pressed', t.dataset.tab === tab);
+    });
+
+    const content = tab === 'releases' ? this.historyEntries : this.journalView;
+    const oldContent = tab === 'releases' ? this.journalView : this.historyEntries;
+
+    if (!this.reduceMotion) {
+      content.style.opacity = '0';
+      content.style.transform = 'translateX(15px)';
+    }
+
+    if (tab === 'releases') {
+      this.journalView.classList.add('hidden');
+      this.historyEntries.classList.remove('hidden');
+    } else {
+      this.journalView.classList.remove('hidden');
+      this.historyEntries.classList.add('hidden');
+      this.renderJournal();
+    }
+
+    if (!this.reduceMotion) {
+      requestAnimationFrame(() => {
+        content.style.transition = 'opacity 0.25s var(--ease-arrive), transform 0.25s var(--ease-arrive)';
+        content.style.opacity = '1';
+        content.style.transform = 'translateX(0)';
+        setTimeout(() => {
+          content.style.transition = '';
+          content.style.opacity = '';
+          content.style.transform = '';
+        }, 250);
+      });
+    }
+  }
+
+  renderJournal() {
+    // Render week calendar
+    const moods = this.history.getWeeklyMoods();
+    const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    const moodEmojis = { 1: '😢', 2: '😕', 3: '😐', 4: '🙂', 5: '😄' };
+
+    if (this.moodCalendar) {
+      this.moodCalendar.innerHTML = '';
+      moods.forEach((m, i) => {
+        const day = document.createElement('div');
+        day.className = 'mood-day';
+        const dot = document.createElement('div');
+        dot.className = 'mood-dot' + (m.mood ? ` mood-${m.mood}` : '');
+        dot.textContent = m.mood ? moodEmojis[m.mood] : '';
+        const label = document.createElement('span');
+        label.className = 'mood-label';
+        label.textContent = dayNames[i];
+        day.appendChild(dot);
+        day.appendChild(label);
+        this.moodCalendar.appendChild(day);
+      });
+    }
+
+    // Set week date label
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(weekStart.getDate() - 6);
+    if (this.journalWeekDate) {
+      this.journalWeekDate.textContent = weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+        + ' - ' + now.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+
+    // Render journal entries (mood check-ins)
+    const journal = this.history.getJournalEntries();
+    const entries = journal.filter(j => j.type === 'checkin');
+
+    if (this.journalEntries) {
+      if (entries.length === 0) {
+        this.journalEntries.innerHTML = '<p class="journal-empty">Your reflections will appear here.</p>';
+        return;
+      }
+
+      this.journalEntries.innerHTML = '';
+      entries.slice(0, 20).forEach(entry => {
+        const date = new Date(entry.timestamp);
+        const timeStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+        const div = document.createElement('div');
+        div.className = 'journal-entry';
+
+        const header = document.createElement('div');
+        header.className = 'journal-entry-header';
+        header.innerHTML = `<span class="journal-entry-date">${timeStr}</span><span>${moodEmojis[entry.mood]}</span>`;
+
+        if (entry.note) {
+          const preview = document.createElement('div');
+          preview.className = 'journal-entry-preview';
+          preview.textContent = entry.note;
+          div.appendChild(header);
+          div.appendChild(preview);
+        } else {
+          div.appendChild(header);
+        }
+
+        this.journalEntries.appendChild(div);
+      });
+    }
+  }
+
+  // Reflection modal
+  showReflection() {
+    if (this.reflectionModal) {
+      this.reflectionModal.showModal();
+      this.reflectionInput.focus();
+    }
+  }
+
+  closeReflection() {
+    if (this.reflectionModal) {
+      this.reflectionModal.close();
+      this.reflectionInput.value = '';
+    }
+  }
+
+  saveReflectionEntry() {
+    const reflection = this.reflectionInput.value.trim();
+    if (reflection && this.pendingReleaseId) {
+      this.history.addReflection(this.pendingReleaseId, reflection);
+    }
+    this.closeReflection();
+  }
+
+  // Check-In modal
+  openCheckIn() {
+    if (this.checkInModal) {
+      this.moodOptions.forEach(o => o.classList.remove('selected'));
+      this.checkInNote.value = '';
+      this.checkInModal.showModal();
+    }
+  }
+
+  closeCheckIn() {
+    if (this.checkInModal) {
+      this.checkInModal.close();
+    }
+  }
+
+  saveCheckInEntry() {
+    const selectedMood = document.querySelector('.mood-option.selected');
+    const mood = selectedMood ? parseInt(selectedMood.dataset.mood) : 3;
+    const note = this.checkInNote.value.trim();
+
+    this.history.addMoodCheckIn(mood, note);
+    this.closeCheckIn();
+    this.renderJournal();
   }
 }
 
